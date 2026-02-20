@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+*.db
+.env
+
+# Virtual env
+.venv/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# ML models
+backend/data/models/*.pkl
+
+# Logs
+*.log
+pip_log.txt
+pip_install.log
+test_result.txt
+server_log.txt
+
+# Flutter
+mobile/.dart_tool/
+mobile/.packages
+mobile/build/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/.metadata
+mobile/*.iml
+mobile/.idea/
+
+# Flutter platform build artifacts
+mobile/android/.gradle/
+mobile/android/local.properties
+mobile/android/app/build/
+mobile/ios/Pods/
+mobile/ios/.symlinks/
+mobile/web/.last_build_id
+
+# OS
+.DS_Store
+Thumbs.db
+
