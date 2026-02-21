@@ -2,9 +2,9 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Системные зависимости для scikit-learn, numpy, pandas
+# Системные зависимости для scikit-learn, numpy, pandas, asyncpg
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends gcc g++ && \
+    apt-get install -y --no-install-recommends gcc g++ libpq-dev && \
     rm -rf /var/lib/apt/lists/*
 
 # Сначала копируем requirements для кэширования слоёв

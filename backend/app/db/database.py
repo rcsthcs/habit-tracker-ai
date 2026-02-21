@@ -7,8 +7,6 @@ settings = get_settings()
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=False,
-    # SQLite needs this; PostgreSQL ignores it
-    connect_args={"check_same_thread": False} if "sqlite" in settings.DATABASE_URL else {},
 )
 
 AsyncSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)

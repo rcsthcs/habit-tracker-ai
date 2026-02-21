@@ -4,7 +4,7 @@ from functools import lru_cache
 
 class Settings(BaseSettings):
     # Database
-    DATABASE_URL: str = "sqlite+aiosqlite:///./habits.db"
+    DATABASE_URL: str = "postgresql+asyncpg://habits_user:habits_pass@localhost:5432/habits_db"
 
     # Auth
     SECRET_KEY: str = "super-secret-dev-key-change-in-production"
