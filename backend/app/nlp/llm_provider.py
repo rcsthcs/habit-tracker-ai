@@ -98,6 +98,10 @@ class OpenAIProvider(LLMProvider):
 
 def get_llm_provider() -> LLMProvider:
     """Factory: returns the appropriate LLM provider."""
+    import os
+    # Allow explicit disable via environment variable
+    if os.getenv("DISABLE_OLLAMA", "").lower() in ("1", "true", "yes"):
+        return FallbackProvider()
     try:
         import ollama
         # Try to check if Ollama is running
