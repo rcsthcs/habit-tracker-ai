@@ -72,6 +72,15 @@ class ApiService {
     return token;
   }
 
+  Future<String> loginWithGoogle(String idToken) async {
+    final response = await _dio.post('/auth/google', data: {
+      'id_token': idToken,
+    });
+    final token = response.data['access_token'];
+    await _saveToken(token);
+    return token;
+  }
+
   Future<User> getMe() async {
     final response = await _dio.get('/auth/me');
     return User.fromJson(response.data);
@@ -96,6 +105,13 @@ class ApiService {
 
   Future<void> deleteHabit(int id) async {
     await _dio.delete('/habits/$id');
+  }
+
+  // ─── Habit Suggestions ───
+
+  Future<List<String>> getHabitSuggestions(String category) async {
+    final response = await _dio.get('/habits/suggestions/$category');
+    return List<String>.from(response.data['suggestions']);
   }
 
   // ─── Habit Logs ───
@@ -157,4 +173,3 @@ class ApiService {
         .toList();
   }
 }
-

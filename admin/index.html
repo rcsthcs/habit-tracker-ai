@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Habit Tracker — Админ-панель</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Toast notifications -->
+    <div id="toast-container"></div>
+
+    <!-- Login -->
+    <div id="login-screen" class="screen active">
+        <div class="login-card">
+            <div class="login-header">
+                <span class="logo">🧠</span>
+                <h1>Habit Tracker AI</h1>
+                <p>Админ-панель</p>
+            </div>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="username">Логин</label>
+                    <input type="text" id="username" placeholder="admin" required autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label for="password">Пароль</label>
+                    <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
+                </div>
+                <button type="submit" class="btn btn-primary btn-full" id="login-btn">Войти</button>
+                <p id="login-error" class="error-text"></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboard-screen" class="screen">
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <span class="logo-sm">🧠</span>
+                <h2>Admin</h2>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#" class="nav-link active" data-tab="analytics">📊 Аналитика</a></li>
+                <li><a href="#" class="nav-link" data-tab="users">👥 Пользователи</a></li>
+                <li><a href="#" class="nav-link" data-tab="habits">🎯 Привычки</a></li>
+                <li><a href="#" class="nav-link" data-tab="chats">💬 Чат-логи</a></li>
+            </ul>
+            <div class="sidebar-footer">
+                <div class="admin-info" id="admin-info"></div>
+                <button class="btn btn-outline btn-sm" id="logout-btn">Выйти</button>
+            </div>
+        </nav>
+
+        <main class="content">
+            <!-- Analytics Tab -->
+            <div id="tab-analytics" class="tab active">
+                <h1>📊 Аналитика платформы</h1>
+                <div class="stats-grid" id="stats-grid"></div>
+                <div class="card mt-20">
+                    <h3>Топ категорий</h3>
+                    <div id="top-categories"></div>
+                </div>
+            </div>
+
+            <!-- Users Tab -->
+            <div id="tab-users" class="tab">
+                <div class="tab-header">
+                    <h1>👥 Пользователи</h1>
+                    <div class="search-bar">
+                        <input type="text" id="users-search" placeholder="Поиск по имени или email...">
+                    </div>
+                </div>
+                <div class="table-wrapper">
+                    <table id="users-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Имя</th>
+                                <th>Email</th>
+                                <th>Привычки</th>
+                                <th>Статус</th>
+                                <th>Роль</th>
+                                <th>Регистрация</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-tbody"></tbody>
+                    </table>
+                </div>
+                <div class="pagination" id="users-pagination"></div>
+            </div>
+
+            <!-- Habits Tab -->
+            <div id="tab-habits" class="tab">
+                <div class="tab-header">
+                    <h1>🎯 Привычки</h1>
+                    <div class="search-bar">
+                        <input type="text" id="habits-search" placeholder="Поиск по названию...">
+                    </div>
+                </div>
+                <div class="table-wrapper">
+                    <table id="habits-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Название</th>
+                                <th>Пользователь</th>
+                                <th>Категория</th>
+                                <th>КД</th>
+                                <th>Время</th>
+                                <th>Логов</th>
+                                <th>%</th>
+                                <th>Активна</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="habits-tbody"></tbody>
+                    </table>
+                </div>
+                <div class="pagination" id="habits-pagination"></div>
+            </div>
+
+            <!-- Chats Tab -->
+            <div id="tab-chats" class="tab">
+                <div class="tab-header">
+                    <h1>💬 Чат-логи</h1>
+                </div>
+                <div class="chat-log" id="chat-log"></div>
+                <div class="pagination" id="chats-pagination"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal: Habit Logs -->
+    <div id="modal-overlay" class="modal-overlay" style="display:none">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2 id="modal-title">Логи привычки</h2>
+                <button class="btn btn-outline btn-sm" onclick="closeModal()">✕</button>
+            </div>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

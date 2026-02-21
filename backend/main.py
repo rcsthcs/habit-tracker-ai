@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.db.database import init_db
-from app.api.routes import auth, habits, analytics, chat, recommendations, notifications
+from app.api.routes import auth, habits, analytics, chat, recommendations, notifications, admin
 from app.notifications.scheduler import create_scheduler
 import logging
 
@@ -52,6 +52,7 @@ app.include_router(analytics.router, prefix="/api")
 app.include_router(chat.router, prefix="/api")
 app.include_router(recommendations.router, prefix="/api")
 app.include_router(notifications.router, prefix="/api")
+app.include_router(admin.router, prefix="/api")
 
 
 @app.get("/")

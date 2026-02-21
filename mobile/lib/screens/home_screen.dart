@@ -23,7 +23,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void _showAddHabitDialog() {
     final nameController = TextEditingController();
     String selectedCategory = 'health';
-    String? targetTime;
+    int cooldownDays = 1;
+    TimeOfDay? targetTime;
+    TimeOfDay? reminderTime;
+    List<String> suggestions = [];
 
     final categories = {
       'health': '🏥 Здоровье',
@@ -38,6 +41,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       'other': '📌 Другое',
     };
 
+    final cooldownOptions = {
+      1: 'Каждый день',
+      2: 'Через день',
+      3: 'Раз в 3 дня',
+      7: 'Раз в неделю',
+    };
+
+    Future<void> loadSuggestions(String category, StateSetter setSheetState) async {
+      try {
+        final api = ref.read(apiServiceProvider);
+        final result = await api.getHabitSuggestions(category);
+        setSheetState(() => suggestions = result);
+      } catch (_) {
+        setSheetState(() => suggestions = []);
+      }
+    }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -46,71 +66,194 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
       builder: (ctx) {
         return StatefulBuilder(builder: (context, setSheetState) {
+          // Load suggestions on first build
+          if (suggestions.isEmpty) {
+            loadSuggestions(selectedCategory, setSheetState);
+          }
+
           return Padding(
             padding: EdgeInsets.fromLTRB(
                 24, 24, 24, MediaQuery.of(context).viewInsets.bottom + 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Новая привычка',
-                    style:
-                        TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 20),
-                TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Название привычки',
-                    hintText: 'Например: Утренняя зарядка',
-                    prefixIcon: Icon(Icons.edit),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Новая привычка',
+                      style:
+                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 20),
+
+                  // Category
+                  const Text('Категория',
+                      style: TextStyle(fontWeight: FontWeight.w500)),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: categories.entries.map((e) {
+                      final isSelected = selectedCategory == e.key;
+                      return ChoiceChip(
+                        label: Text(e.value, style: const TextStyle(fontSize: 12)),
+                        selected: isSelected,
+                        selectedColor:
+                            AppTheme.primaryColor.withOpacity(0.2),
+                        onSelected: (_) {
+                          setSheetState(() {
+                            selectedCategory = e.key;
+                            suggestions = [];
+                          });
+                          loadSuggestions(e.key, setSheetState);
+                        },
+                      );
+                    }).toList(),
                   ),
-                  autofocus: true,
-                ),
-                const SizedBox(height: 16),
-                const Text('Категория',
-                    style: TextStyle(fontWeight: FontWeight.w500)),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: categories.entries.map((e) {
-                    final isSelected = selectedCategory == e.key;
-                    return ChoiceChip(
-                      label: Text(e.value, style: const TextStyle(fontSize: 12)),
-                      selected: isSelected,
-                      selectedColor:
-                          AppTheme.primaryColor.withOpacity(0.2),
-                      onSelected: (_) {
-                        setSheetState(() => selectedCategory = e.key);
-                      },
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      if (nameController.text.isEmpty) return;
-                      await ref.read(habitsProvider.notifier).createHabit({
-                        'name': nameController.text,
-                        'category': selectedCategory,
-                        'frequency': 'daily',
-                      });
-                      if (mounted) Navigator.pop(ctx);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryColor,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                  const SizedBox(height: 16),
+
+                  // Name suggestions
+                  if (suggestions.isNotEmpty) ...[
+                    const Text('Рекомендации',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w500,
+                            fontSize: 13,
+                            color: AppTheme.textSecondary)),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: suggestions.map((s) {
+                        return ActionChip(
+                          label: Text(s, style: const TextStyle(fontSize: 12)),
+                          onPressed: () {
+                            setSheetState(() {
+                              nameController.text = s;
+                              nameController.selection = TextSelection.fromPosition(
+                                TextPosition(offset: s.length),
+                              );
+                            });
+                          },
+                          backgroundColor: AppTheme.primaryColor.withOpacity(0.08),
+                        );
+                      }).toList(),
                     ),
-                    child: const Text('Добавить',
-                        style: TextStyle(fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 12),
+                  ],
+
+                  // Name input
+                  TextField(
+                    controller: nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Название привычки',
+                      hintText: 'Например: Утренняя зарядка',
+                      prefixIcon: Icon(Icons.edit),
+                    ),
+                    autofocus: true,
                   ),
-                ),
-              ],
+                  const SizedBox(height: 16),
+
+                  // Cooldown
+                  const Text('Частота выполнения',
+                      style: TextStyle(fontWeight: FontWeight.w500)),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: cooldownOptions.entries.map((e) {
+                      final isSelected = cooldownDays == e.key;
+                      return ChoiceChip(
+                        label: Text(e.value, style: const TextStyle(fontSize: 12)),
+                        selected: isSelected,
+                        selectedColor: AppTheme.primaryColor.withOpacity(0.2),
+                        onSelected: (_) {
+                          setSheetState(() => cooldownDays = e.key);
+                        },
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Time pickers
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            final time = await showTimePicker(
+                              context: context,
+                              initialTime: targetTime ?? const TimeOfDay(hour: 9, minute: 0),
+                            );
+                            if (time != null) {
+                              setSheetState(() => targetTime = time);
+                            }
+                          },
+                          icon: const Icon(Icons.schedule, size: 18),
+                          label: Text(
+                            targetTime != null
+                                ? 'Выполнять: ${targetTime!.format(context)}'
+                                : 'Время выполнения',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            final time = await showTimePicker(
+                              context: context,
+                              initialTime: reminderTime ?? const TimeOfDay(hour: 8, minute: 30),
+                            );
+                            if (time != null) {
+                              setSheetState(() => reminderTime = time);
+                            }
+                          },
+                          icon: const Icon(Icons.notifications_outlined, size: 18),
+                          label: Text(
+                            reminderTime != null
+                                ? 'Напомнить: ${reminderTime!.format(context)}'
+                                : 'Напоминание',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Submit
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        if (nameController.text.isEmpty) return;
+                        String? formatTime(TimeOfDay? t) =>
+                            t != null
+                                ? '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}'
+                                : null;
+
+                        await ref.read(habitsProvider.notifier).createHabit({
+                          'name': nameController.text,
+                          'category': selectedCategory,
+                          'frequency': 'daily',
+                          'cooldown_days': cooldownDays,
+                          'target_time': formatTime(targetTime),
+                          'reminder_time': formatTime(reminderTime),
+                        });
+                        if (mounted) Navigator.pop(ctx);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryColor,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('Добавить',
+                          style: TextStyle(fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
         });
@@ -259,6 +402,4 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 }
-
-
 

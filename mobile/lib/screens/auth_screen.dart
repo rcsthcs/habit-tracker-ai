@@ -156,6 +156,35 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                 const TextStyle(fontWeight: FontWeight.w600)),
                   ),
                 ),
+                const SizedBox(height: 12),
+
+                // Google Sign-In
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: OutlinedButton.icon(
+                    onPressed: _loading
+                        ? null
+                        : () async {
+                            setState(() => _loading = true);
+                            await ref
+                                .read(authProvider.notifier)
+                                .loginWithGoogle();
+                            setState(() => _loading = false);
+                          },
+                    icon: const Text('G',
+                        style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.red)),
+                    label: const Text('Войти через Google'),
+                    style: OutlinedButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      side: BorderSide(color: Colors.grey.shade300),
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 16),
 
                 // Toggle

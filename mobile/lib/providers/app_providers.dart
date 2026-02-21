@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../services/api_service.dart';
 import '../models/user.dart';
 import '../models/habit.dart';
@@ -28,6 +29,7 @@ class AuthState {
 
 class AuthNotifier extends StateNotifier<AuthState> {
   final ApiService _api;
+  final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
 
   AuthNotifier(this._api) : super(AuthState());
 
@@ -58,6 +60,30 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  Future<void> loginWithGoogle() async {
+    try {
+      final googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) return; // user cancelled
+
+      final googleAuth = await googleUser.authentication;
+      final idToken = googleAuth.idToken;
+      if (idToken == null) {
+        state = AuthState(
+            status: AuthStatus.unauthenticated,
+            error: 'Не удалось получить Google токен');
+        return;
+      }
+
+      await _api.loginWithGoogle(idToken);
+      final user = await _api.getMe();
+      state = AuthState(status: AuthStatus.authenticated, user: user);
+    } catch (e) {
+      state = AuthState(
+          status: AuthStatus.unauthenticated,
+          error: 'Ошибка входа через Google');
+    }
+  }
+
   Future<void> register(
       String username, String email, String password) async {
     try {
@@ -72,6 +98,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> logout() async {
     await _api.clearToken();
+    try { await _googleSignIn.signOut(); } catch (_) {}
     state = AuthState(status: AuthStatus.unauthenticated);
   }
 }

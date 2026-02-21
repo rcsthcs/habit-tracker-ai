@@ -4,7 +4,7 @@ from sqlalchemy import select
 from datetime import datetime, date, timezone, timedelta
 from app.db.database import get_db
 from app.models.user import User
-from app.models.habit import Habit
+from app.models.habit import Habit, HABIT_NAME_SUGGESTIONS
 from app.models.habit_log import HabitLog
 from app.schemas.habit import (
     HabitCreate, HabitUpdate, HabitResponse,
@@ -15,8 +15,8 @@ from app.api.auth_utils import get_current_user
 router = APIRouter(prefix="/habits", tags=["habits"])
 
 
-async def _compute_streak(db: AsyncSession, habit_id: int) -> int:
-    """Compute current consecutive days streak for a habit."""
+async def _compute_streak(db: AsyncSession, habit_id: int, cooldown_days: int = 1) -> int:
+    """Compute current consecutive streak, respecting cooldown_days."""
     result = await db.execute(
         select(HabitLog)
         .where(HabitLog.habit_id == habit_id, HabitLog.completed == True)
@@ -29,17 +29,15 @@ async def _compute_streak(db: AsyncSession, habit_id: int) -> int:
     streak = 0
     expected_date = date.today()
     for log in logs:
-        if log.date == expected_date:
+        diff = (expected_date - log.date).days
+        if diff == 0:
             streak += 1
-            expected_date -= timedelta(days=1)
-        elif log.date == expected_date - timedelta(days=1):
-            # Allow checking from yesterday if today not logged yet
-            if streak == 0:
-                expected_date = log.date
-                streak = 1
-                expected_date -= timedelta(days=1)
-            else:
-                break
+            expected_date -= timedelta(days=cooldown_days)
+        elif diff <= cooldown_days and streak == 0:
+            # Allow if today not logged yet but last log is within cooldown
+            expected_date = log.date
+            streak = 1
+            expected_date -= timedelta(days=cooldown_days)
         else:
             break
     return streak
@@ -56,6 +54,20 @@ async def _completion_rate(db: AsyncSession, habit_id: int, days: int = 30) -> f
         return 0.0
     completed = sum(1 for l in logs if l.completed)
     return round(completed / len(logs) * 100, 1)
+
+
+# --- Suggestions endpoint ---
+@router.get("/suggestions/{category}")
+async def get_name_suggestions(category: str):
+    """Get habit name suggestions for a category."""
+    suggestions = HABIT_NAME_SUGGESTIONS.get(category, HABIT_NAME_SUGGESTIONS["other"])
+    return {"category": category, "suggestions": suggestions}
+
+
+@router.get("/suggestions")
+async def get_all_suggestions():
+    """Get all habit name suggestions grouped by category."""
+    return HABIT_NAME_SUGGESTIONS
 
 
 @router.post("/", response_model=HabitResponse, status_code=status.HTTP_201_CREATED)
@@ -222,4 +234,3 @@ async def get_habit_logs(
         .order_by(HabitLog.date.desc())
     )
     return result.scalars().all()
-

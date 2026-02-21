@@ -7,7 +7,9 @@ class Habit {
   final String description;
   final String category;
   final String frequency;
+  final int cooldownDays;
   final String? targetTime;
+  final String? reminderTime;
   final String color;
   final String icon;
   final bool isActive;
@@ -22,7 +24,9 @@ class Habit {
     required this.description,
     required this.category,
     required this.frequency,
+    this.cooldownDays = 1,
     this.targetTime,
+    this.reminderTime,
     required this.color,
     required this.icon,
     required this.isActive,
@@ -39,7 +43,9 @@ class Habit {
       description: json['description'] ?? '',
       category: json['category'] ?? 'other',
       frequency: json['frequency'] ?? 'daily',
+      cooldownDays: json['cooldown_days'] ?? 1,
       targetTime: json['target_time'],
+      reminderTime: json['reminder_time'],
       color: json['color'] ?? '#4CAF50',
       icon: json['icon'] ?? 'check_circle',
       isActive: json['is_active'] ?? true,
@@ -55,7 +61,9 @@ class Habit {
       'description': description,
       'category': category,
       'frequency': frequency,
+      'cooldown_days': cooldownDays,
       'target_time': targetTime,
+      'reminder_time': reminderTime,
       'color': color,
       'icon': icon,
     };
@@ -69,4 +77,3 @@ class Habit {
     }
   }
 }
-
