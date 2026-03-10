@@ -63,6 +63,26 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
         title: Text(habit.name),
         actions: [
           IconButton(
+            icon: const Icon(Icons.edit_outlined, color: AppTheme.primaryColor),
+            onPressed: () async {
+              final updated = await Navigator.push<bool>(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => EditHabitScreen(habit: _habit),
+                ),
+              );
+              if (updated == true) {
+                // Reload habit data after edit
+                final api = ref.read(apiServiceProvider);
+                final habits = await api.getHabits();
+                final h = habits.firstWhere((h) => h.id == _habit.id,
+                    orElse: () => _habit);
+                setState(() => _habit = h);
+                await _loadLogs();
+              }
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.delete_outline, color: AppTheme.errorColor),
             onPressed: () => _confirmDelete(context),
           ),

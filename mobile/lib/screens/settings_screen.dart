@@ -4,6 +4,7 @@ import '../core/theme.dart';
 import '../providers/app_providers.dart';
 import 'notifications_screen.dart';
 import 'achievements_screen.dart';
+import 'profile_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -22,37 +23,44 @@ class SettingsScreen extends ConsumerWidget {
         children: [
           // Profile card
           Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 30,
-                    backgroundColor: AppTheme.primaryColor,
-                    child: Text(
-                      user?.username.substring(0, 1).toUpperCase() ?? '?',
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold),
+            child: InkWell(
+              onTap: () => Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const ProfileScreen())),
+              borderRadius: BorderRadius.circular(16),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 30,
+                      backgroundColor: AppTheme.primaryColor,
+                      child: Text(
+                        user?.username.substring(0, 1).toUpperCase() ?? '?',
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(user?.username ?? 'Пользователь',
-                            style: const TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.w600)),
-                        const SizedBox(height: 4),
-                        Text(user?.email ?? '',
-                            style: const TextStyle(
-                                color: AppTheme.textSecondary, fontSize: 14)),
-                      ],
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(user?.username ?? 'Пользователь',
+                              style: const TextStyle(
+                                  fontSize: 18, fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 4),
+                          Text(user?.email ?? '',
+                              style: const TextStyle(
+                                  color: AppTheme.textSecondary, fontSize: 14)),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                    const Icon(Icons.chevron_right,
+                        color: AppTheme.textSecondary),
+                  ],
+                ),
               ),
             ),
           ),
@@ -109,14 +117,14 @@ class SettingsScreen extends ConsumerWidget {
                   leading: const Icon(Icons.auto_awesome,
                       color: AppTheme.primaryColor),
                   title: const Text('AI Модель'),
-                  subtitle: const Text('Ollama (локальная)'),
+                  subtitle: const Text('LLM (Ollama / OpenAI)'),
                 ),
                 const Divider(height: 1),
                 ListTile(
                   leading:
                       const Icon(Icons.storage, color: AppTheme.primaryColor),
                   title: const Text('База данных'),
-                  subtitle: const Text('SQLite (локальная)'),
+                  subtitle: const Text('PostgreSQL'),
                 ),
               ],
             ),
@@ -134,15 +142,16 @@ class SettingsScreen extends ConsumerWidget {
               child: const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('🔄 Миграция на продакшен',
+                  Text('🏗️ Архитектура',
                       style:
                           TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
                   SizedBox(height: 8),
                   Text(
-                    '• БД: SQLite → PostgreSQL\n'
-                    '• LLM: Ollama → OpenAI API\n'
-                    '• Уведомления: Локальные → Firebase\n'
-                    '• Хостинг: localhost → Cloud',
+                    '• БД: PostgreSQL 16\n'
+                    '• Бэкенд: FastAPI + Uvicorn\n'
+                    '• AI: Ollama / OpenAI LLM\n'
+                    '• Уведомления: APScheduler + Push\n'
+                    '• Деплой: Docker Compose',
                     style: TextStyle(
                         fontSize: 13,
                         height: 1.6,

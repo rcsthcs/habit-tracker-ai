@@ -7,6 +7,7 @@ class HabitCard extends StatelessWidget {
   final bool isCompletedToday;
   final VoidCallback onToggle;
   final VoidCallback onTap;
+  final VoidCallback? onDelete;
 
   const HabitCard({
     super.key,
@@ -14,11 +15,12 @@ class HabitCard extends StatelessWidget {
     required this.isCompletedToday,
     required this.onToggle,
     required this.onTap,
+    this.onDelete,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    final card = Card(
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
@@ -112,20 +114,72 @@ class HabitCard extends StatelessWidget {
                   ],
                 ),
               ),
-              // Category color dot
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: habit.colorValue,
-                  shape: BoxShape.circle,
-                ),
+              // Category color dot + cooldown indicator
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: habit.colorValue,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  if (habit.cooldownDays > 1) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      '${habit.cooldownDays}д',
+                      style: const TextStyle(
+                          fontSize: 9, color: AppTheme.textSecondary),
+                    ),
+                  ],
+                ],
               ),
             ],
           ),
         ),
       ),
     );
+
+    if (onDelete != null) {
+      return Dismissible(
+        key: ValueKey(habit.id),
+        direction: DismissDirection.endToStart,
+        background: Container(
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.only(right: 24),
+          margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
+          decoration: BoxDecoration(
+            color: AppTheme.errorColor,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: const Icon(Icons.delete, color: Colors.white),
+        ),
+        confirmDismiss: (_) async {
+          return await showDialog<bool>(
+            context: context,
+            builder: (_) => AlertDialog(
+              title: const Text('Удалить привычку?'),
+              content: Text('«${habit.name}» будет удалена.'),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Отмена')),
+                TextButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text('Удалить',
+                        style: TextStyle(color: AppTheme.errorColor))),
+              ],
+            ),
+          );
+        },
+        onDismissed: (_) => onDelete!(),
+        child: card,
+      );
+    }
+
+    return card;
   }
 }
 

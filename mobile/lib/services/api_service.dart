@@ -90,6 +90,11 @@ class ApiService {
     return User.fromJson(response.data);
   }
 
+  Future<User> updateProfile(Map<String, dynamic> data) async {
+    final response = await _dio.patch('/auth/me', data: data);
+    return User.fromJson(response.data);
+  }
+
   // ─── Habits ───
 
   Future<List<Habit>> getHabits() async {

@@ -9,6 +9,12 @@ class UserCreate(BaseModel):
     password: str
 
 
+class UserUpdate(BaseModel):
+    username: str | None = None
+    email: str | None = None
+    timezone: str | None = None
+
+
 class UserLogin(BaseModel):
     username: str
     password: str

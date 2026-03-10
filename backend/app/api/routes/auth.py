@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.db.database import get_db
 from app.models.user import User
-from app.schemas.user import UserCreate, UserResponse, Token, GoogleAuthRequest
+from app.schemas.user import UserCreate, UserResponse, Token, GoogleAuthRequest, UserUpdate
 from app.api.auth_utils import get_password_hash, verify_password, create_access_token, get_current_user
 from app.config import get_settings
 import logging
@@ -123,3 +123,36 @@ async def google_auth(data: GoogleAuthRequest, db: AsyncSession = Depends(get_db
 @router.get("/me", response_model=UserResponse)
 async def get_me(current_user: User = Depends(get_current_user)):
     return current_user
+
+
+@router.patch("/me", response_model=UserResponse)
+async def update_profile(
+    data: UserUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Update current user's profile."""
+    update_data = data.model_dump(exclude_unset=True)
+
+    if "username" in update_data:
+        # Check uniqueness
+        result = await db.execute(
+            select(User).where(User.username == update_data["username"], User.id != current_user.id)
+        )
+        if result.scalar_one_or_none():
+            raise HTTPException(status_code=400, detail="Username already taken")
+
+    if "email" in update_data:
+        result = await db.execute(
+            select(User).where(User.email == update_data["email"], User.id != current_user.id)
+        )
+        if result.scalar_one_or_none():
+            raise HTTPException(status_code=400, detail="Email already taken")
+
+    for field, value in update_data.items():
+        setattr(current_user, field, value)
+
+    await db.commit()
+    await db.refresh(current_user)
+    return current_user
+

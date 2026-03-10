@@ -454,6 +454,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ref.read(habitsProvider.notifier).toggleHabit(
                             habit.id, !habit.completedToday);
                       },
+                      onDelete: () {
+                        ref.read(habitsProvider.notifier).deleteHabit(habit.id);
+                      },
                       onTap: () {
                         Navigator.push(
                           context,
