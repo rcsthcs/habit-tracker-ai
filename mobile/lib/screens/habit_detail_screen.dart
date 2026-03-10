@@ -6,6 +6,7 @@ import '../models/habit.dart';
 import '../models/habit_log.dart';
 import '../providers/app_providers.dart';
 import '../widgets/streak_badge.dart';
+import 'edit_habit_screen.dart';
 
 class HabitDetailScreen extends ConsumerStatefulWidget {
   final Habit habit;
