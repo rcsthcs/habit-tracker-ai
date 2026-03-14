@@ -146,6 +146,50 @@ class GeminiProvider(LLMProvider):
             return f"Извини, я сейчас не могу ответить (Gemini недоступен: {type(e).__name__}). Попробуй позже!"
 
 
+class OpenRouterProvider(LLMProvider):
+    """OpenRouter API provider."""
+
+    def __init__(self):
+        settings = get_settings()
+        self.api_key = settings.OPENROUTER_API_KEY
+        self.model = settings.OPENROUTER_MODEL
+
+    async def generate(self, system_prompt: str, user_message: str, history: list[dict] = None) -> str:
+        if not self.api_key:
+            return "OpenRouter API ключ не настроен."
+
+        messages = [{"role": "system", "content": system_prompt}]
+        if history:
+            messages.extend(history)
+        messages.append({"role": "user", "content": user_message})
+
+        payload = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": 0.7,
+        }
+
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "HTTP-Referer": "http://localhost:8000",
+            "X-Title": "HabitTrackerAI",
+            "Content-Type": "application/json"
+        }
+
+        url = "https://openrouter.ai/api/v1/chat/completions"
+
+        def _request() -> str:
+            response = requests.post(url, headers=headers, json=payload, timeout=30)
+            response.raise_for_status()
+            data = response.json()
+            return data["choices"][0]["message"]["content"].strip()
+
+        try:
+            return await asyncio.to_thread(_request)
+        except Exception as e:
+            return f"Извини, я сейчас не могу ответить (OpenRouter недоступен: {type(e).__name__}). Попробуй позже!"
+
+
 class OpenAIProvider(LLMProvider):
     """
     OpenAI API provider — for future migration.
@@ -180,20 +224,36 @@ def get_llm_provider() -> LLMProvider:
     if provider_name == "gemini":
         return GeminiProvider() if settings.GEMINI_API_KEY else FallbackProvider()
 
-    if provider_name == "ollama":
+        import requests
         try:
+            # Check if ollama is actually running
+            requests.get(settings.OLLAMA_BASE_URL, timeout=1)
             import ollama
             return OllamaProvider()
-        except ImportError:
+        except (requests.exceptions.RequestException, ImportError):
+            if settings.OPENROUTER_API_KEY:
+                return OpenRouterProvider()
             return FallbackProvider()
 
-    # auto mode: prefer Gemini key, otherwise Ollama, otherwise fallback
+    # auto mode: prefer Gemini key, otherwise Ollama, otherwise OpenRouter, otherwise fallback
     if settings.GEMINI_API_KEY:
         return GeminiProvider()
 
+    if settings.OPENROUTER_API_KEY:
+        # Check if ollama is actually running first in auto mode
+        try:
+            import requests
+            requests.get(settings.OLLAMA_BASE_URL, timeout=1)
+            import ollama
+            return OllamaProvider()
+        except (requests.exceptions.RequestException, ImportError):
+            return OpenRouterProvider()
+
     try:
+        import requests
+        requests.get(settings.OLLAMA_BASE_URL, timeout=1)
         import ollama
         return OllamaProvider()
-    except ImportError:
+    except (requests.exceptions.RequestException, ImportError):
         return FallbackProvider()
 

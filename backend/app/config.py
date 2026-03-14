@@ -20,6 +20,10 @@ class Settings(BaseSettings):
     OLLAMA_MODEL: str = "gemma"
     GEMINI_API_KEY: str = ""
     GEMINI_MODEL: str = "gemini-2.0-flash"
+    
+    # OpenRouter
+    OPENROUTER_API_KEY: str = ""
+    OPENROUTER_MODEL: str = "stepfun/step-3.5-flash:free"
 
     # ML
     MODEL_STORE_PATH: str = "data/models"

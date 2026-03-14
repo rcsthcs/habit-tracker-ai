@@ -135,6 +135,33 @@ async def get_mood_analytics(
 
     mood_responses = [MoodLogResponse.model_validate(m) for m in mood_logs]
 
+    # Generate AI Insight for mood
+    ai_insight = None
+    if mood_logs:
+        try:
+            from app.nlp.llm_provider import get_llm_provider
+            provider = get_llm_provider()
+            
+            corr_text = ", ".join([f"{c.habit_name} ({c.interpretation})" for c in correlations[:3]]) or "нет явных"
+            
+            sys_prompt = (
+                "Ты — AI-коуч по психологии привычек. Проанализируй данные о настроении пользователя и "
+                "сделай ОДИН короткий, эмпатичный вывод (максимум 2-3 предложения) о том, как действия влияют на "
+                "его самочувствие. Дай мягкий совет. Формат ответа - просто текст."
+            )
+            data_str = (
+                f"Среднее настроение 7дн: {avg_7d}, 30дн: {avg_30d}. Тренд: {trend}. "
+                f"Лучший день: {best_day}, худший: {worst_day}. "
+                f"Топ влияющих привычек: {corr_text}."
+            )
+            msg = f"Проанализируй эти данные и дай короткий инсайт:\n{data_str}"
+            
+            insight = await provider.generate(sys_prompt, msg)
+            if insight:
+                ai_insight = insight.strip()
+        except Exception:
+            pass
+
     return MoodAnalytics(
         avg_mood_7d=avg_7d,
         avg_mood_30d=avg_30d,
@@ -143,6 +170,7 @@ async def get_mood_analytics(
         worst_day=worst_day,
         correlations=correlations,
         mood_history=mood_responses,
+        ai_insight=ai_insight,
     )
 
 

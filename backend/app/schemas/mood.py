@@ -42,3 +42,4 @@ class MoodAnalytics(BaseModel):
     worst_day: str | None
     correlations: list[MoodHabitCorrelation]
     mood_history: list[MoodLogResponse]
+    ai_insight: str | None = None
