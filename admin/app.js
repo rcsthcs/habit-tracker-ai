@@ -190,8 +190,8 @@ async function loadUsers() {
                     <td>${formatDate(u.created_at)}</td>
                     <td class="actions">
                         ${u.is_active
-                            ? `<button class="btn btn-warning btn-xs" onclick="blockUser(${u.id})">Блок</button>`
-                            : `<button class="btn btn-success btn-xs" onclick="unblockUser(${u.id})">Разблок</button>`}
+                    ? `<button class="btn btn-warning btn-xs" onclick="blockUser(${u.id})">Блок</button>`
+                    : `<button class="btn btn-success btn-xs" onclick="unblockUser(${u.id})">Разблок</button>`}
                         <button class="btn btn-outline btn-xs" onclick="toggleAdmin(${u.id})">${u.is_admin ? '⬇ Юзер' : '⬆ Админ'}</button>
                         <button class="btn btn-danger btn-xs" onclick="deleteUser(${u.id}, '${esc(u.username)}')">✕</button>
                     </td>
@@ -208,25 +208,25 @@ async function loadUsers() {
 async function blockUser(id) {
     if (!confirm('Заблокировать пользователя?')) return;
     try { await api('PATCH', `/admin/users/${id}/block`); toast('Пользователь заблокирован'); loadUsers(); }
-    catch(e) { toast(e.message, 'error'); }
+    catch (e) { toast(e.message, 'error'); }
 }
 
 async function unblockUser(id) {
     try { await api('PATCH', `/admin/users/${id}/unblock`); toast('Пользователь разблокирован'); loadUsers(); }
-    catch(e) { toast(e.message, 'error'); }
+    catch (e) { toast(e.message, 'error'); }
 }
 
 async function deleteUser(id, name) {
     if (!confirm(`Удалить пользователя "${name}" и все его данные?`)) return;
     try { await api('DELETE', `/admin/users/${id}`); toast('Пользователь удалён'); loadUsers(); }
-    catch(e) { toast(e.message, 'error'); }
+    catch (e) { toast(e.message, 'error'); }
 }
 
 async function toggleAdmin(id) {
     try {
         const r = await api('PATCH', `/admin/users/${id}/toggle-admin`);
         toast(r.message); loadUsers();
-    } catch(e) { toast(e.message, 'error'); }
+    } catch (e) { toast(e.message, 'error'); }
 }
 
 // ─── Habits ───
@@ -272,7 +272,7 @@ async function loadHabits() {
 async function deleteHabit(id, name) {
     if (!confirm(`Удалить привычку "${name}"?`)) return;
     try { await api('DELETE', `/admin/habits/${id}`); toast('Привычка удалена'); loadHabits(); }
-    catch(e) { toast(e.message, 'error'); }
+    catch (e) { toast(e.message, 'error'); }
 }
 
 async function generateLogs(habitId) {
@@ -288,7 +288,7 @@ async function generateLogs(habitId) {
         });
         toast(r.message);
         loadHabits();
-    } catch(e) { toast(e.message, 'error'); }
+    } catch (e) { toast(e.message, 'error'); }
 }
 
 // ─── Modal: Habit Logs ───
@@ -311,7 +311,7 @@ async function openHabitLogs(habitId, habitName) {
         const today = new Date();
         let calendarHTML = '<div class="log-calendar">';
         // Day headers
-        ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].forEach(d => {
+        ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].forEach(d => {
             calendarHTML += `<div style="text-align:center;font-size:10px;color:var(--text-secondary);font-weight:600">${d}</div>`;
         });
 
@@ -362,7 +362,7 @@ async function toggleLogDay(habitId, dateStr, currentCompleted, habitName) {
         });
         toast(`${dateStr}: ${newCompleted ? '✅' : '❌'}`);
         openHabitLogs(habitId, habitName); // Refresh
-    } catch(e) { toast(e.message, 'error'); }
+    } catch (e) { toast(e.message, 'error'); }
 }
 
 async function deleteLog(logId, habitId, habitName) {
@@ -370,7 +370,7 @@ async function deleteLog(logId, habitId, habitName) {
         await api('DELETE', `/admin/logs/${logId}`);
         toast('Запись удалена');
         openHabitLogs(habitId, habitName);
-    } catch(e) { toast(e.message, 'error'); }
+    } catch (e) { toast(e.message, 'error'); }
 }
 
 // ─── Chats ───
@@ -496,7 +496,7 @@ document.getElementById('modal-overlay').addEventListener('click', (e) => {
                 loadTab('analytics');
                 return;
             }
-        } catch (_) {}
+        } catch (_) { }
         localStorage.removeItem('admin_token');
         token = null;
     }

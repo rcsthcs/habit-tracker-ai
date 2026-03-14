@@ -224,6 +224,10 @@ def get_llm_provider() -> LLMProvider:
     if provider_name == "gemini":
         return GeminiProvider() if settings.GEMINI_API_KEY else FallbackProvider()
 
+    if provider_name == "openrouter":
+        return OpenRouterProvider() if settings.OPENROUTER_API_KEY else FallbackProvider()
+
+    if provider_name == "ollama":
         import requests
         try:
             # Check if ollama is actually running

@@ -297,11 +297,6 @@ async def get_weekly_report(
         report = await _generate_weekly_report(db, current_user, week_start)
 
     resp = WeeklyReportResponse.model_validate(report)
-    if report.ai_tips:
-        try:
-            resp.ai_tips = json.loads(report.ai_tips)
-        except (json.JSONDecodeError, TypeError):
-            resp.ai_tips = [report.ai_tips] if report.ai_tips else []
     return resp
 
 
@@ -322,11 +317,6 @@ async def get_weekly_reports_history(
     responses = []
     for r in reports:
         resp = WeeklyReportResponse.model_validate(r)
-        if r.ai_tips:
-            try:
-                resp.ai_tips = json.loads(r.ai_tips)
-            except (json.JSONDecodeError, TypeError):
-                resp.ai_tips = [r.ai_tips] if r.ai_tips else []
         responses.append(resp)
     return responses
 
