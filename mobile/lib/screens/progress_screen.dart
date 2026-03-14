@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
-import '../core/theme.dart';
+import '../core/app_colors.dart';
+import '../core/theme_extensions.dart';
 import '../providers/app_providers.dart';
 import '../widgets/streak_badge.dart';
 import 'achievements_screen.dart';
@@ -63,7 +64,7 @@ class ProgressScreen extends ConsumerWidget {
                             width: 60,
                             decoration: BoxDecoration(
                               color: a.unlocked
-                                  ? AppTheme.primaryColor.withOpacity(0.1)
+                                  ? AppColors.primary.withValues(alpha: 0.1)
                                   : Colors.grey[100],
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -82,7 +83,7 @@ class ProgressScreen extends ConsumerWidget {
                                     style: TextStyle(
                                         fontSize: 9,
                                         color: a.unlocked
-                                            ? AppTheme.textPrimary
+                                            ? context.textPrimary
                                             : Colors.grey)),
                               ],
                             ),
@@ -112,7 +113,7 @@ class ProgressScreen extends ConsumerWidget {
                         label: 'Сегодня',
                         value:
                             '${analytics.todayCompleted}/${analytics.todayTotal}',
-                        color: AppTheme.successColor,
+                        color: AppColors.success,
                       ),
                       const SizedBox(width: 12),
                       _StatCard(
@@ -127,7 +128,7 @@ class ProgressScreen extends ConsumerWidget {
                         label: 'Общий %',
                         value:
                             '${analytics.overallCompletionRate.toStringAsFixed(0)}%',
-                        color: AppTheme.primaryColor,
+                        color: AppColors.primary,
                       ),
                     ],
                   ),
@@ -192,10 +193,10 @@ class ProgressScreen extends ConsumerWidget {
                               BarChartRodData(
                                 toY: analytics.weeklyCompletion[i],
                                 color: analytics.weeklyCompletion[i] >= 70
-                                    ? AppTheme.successColor
+                                    ? AppColors.success
                                     : analytics.weeklyCompletion[i] >= 40
-                                        ? AppTheme.warningColor
-                                        : AppTheme.errorColor,
+                                        ? AppColors.warning
+                                        : AppColors.error,
                                 width: 20,
                                 borderRadius: const BorderRadius.vertical(
                                     top: Radius.circular(6)),
@@ -214,14 +215,14 @@ class ProgressScreen extends ConsumerWidget {
                       title: '⭐ Самая стабильная',
                       message: analytics.mostConsistentHabit!,
                       icon: Icons.emoji_events,
-                      color: AppTheme.successColor,
+                      color: AppColors.success,
                     ),
                   if (analytics.mostStruggledHabit != null)
                     AiTipCard(
                       title: '💪 Нужно внимание',
                       message: analytics.mostStruggledHabit!,
                       icon: Icons.fitness_center,
-                      color: AppTheme.warningColor,
+                      color: AppColors.warning,
                     ),
                   if (analytics.optimalTime != null)
                     AiTipCard(
@@ -229,7 +230,7 @@ class ProgressScreen extends ConsumerWidget {
                       message:
                           'Ты наиболее продуктивен в ${analytics.optimalTime}',
                       icon: Icons.schedule,
-                      color: AppTheme.primaryColor,
+                      color: AppColors.primary,
                     ),
                 ],
               ),
@@ -248,15 +249,15 @@ class ProgressScreen extends ConsumerWidget {
                   const Text('Активность за 90 дней',
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 12),
-                  _buildHeatmap(detailed.heatmap),
+                  _buildHeatmap(context, detailed.heatmap),
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      _HeatmapLegend(color: AppTheme.successColor, label: 'Всё выполнено'),
+                      _HeatmapLegend(color: AppColors.success, label: 'Всё выполнено'),
                       const SizedBox(width: 12),
-                      _HeatmapLegend(color: AppTheme.errorColor.withOpacity(0.4), label: 'Есть пропуски'),
+                      _HeatmapLegend(color: AppColors.error.withValues(alpha: 0.4), label: 'Есть пропуски'),
                       const SizedBox(width: 12),
-                      _HeatmapLegend(color: Colors.grey.withOpacity(0.15), label: 'Нет данных'),
+                      _HeatmapLegend(color: Colors.grey.withValues(alpha: 0.15), label: 'Нет данных'),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -265,10 +266,10 @@ class ProgressScreen extends ConsumerWidget {
                   Row(
                     children: [
                       _StatCard(icon: Icons.check, label: 'Выполнено',
-                          value: '${detailed.totalCompleted}', color: AppTheme.successColor),
+                          value: '${detailed.totalCompleted}', color: AppColors.success),
                       const SizedBox(width: 12),
                       _StatCard(icon: Icons.calendar_today, label: 'Дней активности',
-                          value: '${detailed.daysActive}', color: AppTheme.primaryColor),
+                          value: '${detailed.daysActive}', color: AppColors.primary),
                       const SizedBox(width: 12),
                       _StatCard(icon: Icons.edit_note, label: 'Всего записей',
                           value: '${detailed.totalLogged}', color: Colors.orange),
@@ -323,12 +324,12 @@ class ProgressScreen extends ConsumerWidget {
                                   .map((e) => FlSpot(e.key.toDouble(), e.value))
                                   .toList(),
                               isCurved: true,
-                              color: AppTheme.primaryColor,
+                              color: AppColors.primary,
                               barWidth: 3,
                               dotData: const FlDotData(show: false),
                               belowBarData: BarAreaData(
                                 show: true,
-                                color: AppTheme.primaryColor.withOpacity(0.1),
+                                color: AppColors.primary.withValues(alpha: 0.1),
                               ),
                             ),
                           ],
@@ -361,8 +362,8 @@ class ProgressScreen extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(16),
                           gradient: LinearGradient(
                             colors: [
-                              AppTheme.primaryColor.withOpacity(0.1),
-                              AppTheme.secondaryColor.withOpacity(0.05),
+                              AppColors.primary.withValues(alpha: 0.1),
+                              AppColors.secondary.withValues(alpha: 0.05),
                             ],
                           ),
                         ),
@@ -382,7 +383,7 @@ class ProgressScreen extends ConsumerWidget {
                               context, ref, rec['title'] ?? '', rec['reason'] ?? ''),
                           child: ListTile(
                             leading: const CircleAvatar(
-                              backgroundColor: AppTheme.primaryColor,
+                              backgroundColor: AppColors.primary,
                               child: Icon(Icons.add, color: Colors.white),
                             ),
                             title: Text(rec['title'] ?? ''),
@@ -392,19 +393,19 @@ class ProgressScreen extends ConsumerWidget {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
-                                color: AppTheme.primaryColor.withOpacity(0.1),
+                                color: AppColors.primary.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: const Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(Icons.add, size: 14,
-                                      color: AppTheme.primaryColor),
+                                      color: AppColors.primary),
                                   SizedBox(width: 2),
                                   Text('Добавить',
                                       style: TextStyle(
                                           fontSize: 11,
-                                          color: AppTheme.primaryColor,
+                                          color: AppColors.primary,
                                           fontWeight: FontWeight.w600)),
                                 ],
                               ),
@@ -490,19 +491,19 @@ class ProgressScreen extends ConsumerWidget {
                       padding: const EdgeInsets.all(10),
                       margin: const EdgeInsets.only(bottom: 12),
                       decoration: BoxDecoration(
-                        color: AppTheme.primaryColor.withOpacity(0.06),
+                        color: AppColors.primary.withValues(alpha: 0.06),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Row(
                         children: [
                           const Icon(Icons.lightbulb_outline,
-                              size: 18, color: AppTheme.primaryColor),
+                              size: 18, color: AppColors.primary),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(reason,
-                                style: const TextStyle(
+                                style: TextStyle(
                                     fontSize: 12,
-                                    color: AppTheme.textSecondary)),
+                                    color: context.textSecondary)),
                           ),
                         ],
                       ),
@@ -531,7 +532,7 @@ class ProgressScreen extends ConsumerWidget {
                         label:
                             Text(e.value, style: const TextStyle(fontSize: 12)),
                         selected: isSelected,
-                        selectedColor: AppTheme.primaryColor.withOpacity(0.2),
+                        selectedColor: AppColors.primary.withValues(alpha: 0.2),
                         onSelected: (_) {
                           setSheetState(() => selectedCategory = e.key);
                         },
@@ -553,7 +554,7 @@ class ProgressScreen extends ConsumerWidget {
                         label:
                             Text(e.value, style: const TextStyle(fontSize: 12)),
                         selected: isSelected,
-                        selectedColor: AppTheme.primaryColor.withOpacity(0.2),
+                        selectedColor: AppColors.primary.withValues(alpha: 0.2),
                         onSelected: (_) {
                           setSheetState(() => cooldownDays = e.key);
                         },
@@ -580,7 +581,7 @@ class ProgressScreen extends ConsumerWidget {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('Привычка добавлена! ✅'),
-                              backgroundColor: AppTheme.successColor,
+                              backgroundColor: AppColors.success,
                             ),
                           );
                         }
@@ -589,7 +590,7 @@ class ProgressScreen extends ConsumerWidget {
                       label: const Text('Добавить привычку',
                           style: TextStyle(fontWeight: FontWeight.w600)),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryColor,
+                        backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12)),
@@ -605,7 +606,7 @@ class ProgressScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeatmap(Map<String, bool?> heatmap) {
+  Widget _buildHeatmap(BuildContext context, Map<String, bool?> heatmap) {
     final sortedDates = heatmap.keys.toList()..sort();
     return Wrap(
       spacing: 3,
@@ -614,11 +615,11 @@ class ProgressScreen extends ConsumerWidget {
         final val = heatmap[dateStr];
         Color color;
         if (val == true) {
-          color = AppTheme.successColor;
+          color = AppColors.success;
         } else if (val == false) {
-          color = AppTheme.errorColor.withOpacity(0.4);
+          color = AppColors.error.withValues(alpha: 0.4);
         } else {
-          color = Colors.grey.withOpacity(0.15);
+          color = Colors.grey.withValues(alpha: 0.15);
         }
         final parts = dateStr.split('-');
         final day = parts.length >= 3 ? parts[2] : '';
@@ -635,7 +636,7 @@ class ProgressScreen extends ConsumerWidget {
               child: Text(day,
                   style: TextStyle(
                     fontSize: 8,
-                    color: val == true ? Colors.white : AppTheme.textSecondary,
+                    color: val == true ? Colors.white : context.textSecondary,
                   )),
             ),
           ),
@@ -709,8 +710,8 @@ class _StatCard extends StatelessWidget {
               const SizedBox(height: 2),
               Text(label,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      fontSize: 11, color: AppTheme.textSecondary)),
+                  style: TextStyle(
+                      fontSize: 11, color: context.textSecondary)),
             ],
           ),
         ),
@@ -733,7 +734,7 @@ class _HeatmapLegend extends StatelessWidget {
             decoration: BoxDecoration(
                 color: color, borderRadius: BorderRadius.circular(3))),
         const SizedBox(width: 4),
-        Text(label, style: const TextStyle(fontSize: 10, color: AppTheme.textSecondary)),
+        Text(label, style: TextStyle(fontSize: 10, color: context.textSecondary)),
       ],
     );
   }

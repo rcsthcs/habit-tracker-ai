@@ -1,9 +1,13 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
-import '../core/theme.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import '../core/app_colors.dart';
+import '../core/theme_extensions.dart';
 import '../providers/app_providers.dart';
+import '../widgets/user_avatar.dart';
+import '../widgets/avatar_editor.dart';
+import '../widgets/glass_card.dart';
+import '../widgets/gradient_button.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -26,7 +30,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final user = ref.read(authProvider).user;
     _usernameController = TextEditingController(text: user?.username ?? '');
     _emailController = TextEditingController(text: user?.email ?? '');
-
     _usernameController.addListener(_onChanged);
     _emailController.addListener(_onChanged);
   }
@@ -47,63 +50,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> _pickAndUploadAvatar() async {
-    final picker = ImagePicker();
-    final source = await showModalBottomSheet<ImageSource>(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('Выбрать фото',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-              const SizedBox(height: 16),
-              ListTile(
-                leading: const CircleAvatar(
-                  backgroundColor: AppTheme.primaryColor,
-                  child: Icon(Icons.camera_alt, color: Colors.white),
-                ),
-                title: const Text('Камера'),
-                onTap: () => Navigator.pop(ctx, ImageSource.camera),
-              ),
-              ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: AppTheme.secondaryColor,
-                  child: const Icon(Icons.photo_library, color: Colors.white),
-                ),
-                title: const Text('Галерея'),
-                onTap: () => Navigator.pop(ctx, ImageSource.gallery),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-
-    if (source == null) return;
-
-    final picked = await picker.pickImage(
-      source: source,
-      maxWidth: 512,
-      maxHeight: 512,
-      imageQuality: 85,
-    );
-    if (picked == null) return;
+    final file = await pickAndCropAvatar(context);
+    if (file == null) return;
 
     setState(() => _uploadingAvatar = true);
     try {
       final api = ref.read(apiServiceProvider);
-      await api.uploadAvatar(File(picked.path));
+      await api.uploadAvatar(file);
       await ref.read(authProvider.notifier).checkAuth();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Аватар обновлён ✅'),
-            backgroundColor: AppTheme.successColor,
+          SnackBar(
+            content: const Text('Аватар обновлён ✅'),
+            backgroundColor: context.successColor,
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
@@ -112,7 +72,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Ошибка загрузки: $e'),
-            backgroundColor: AppTheme.errorColor,
+            backgroundColor: context.errorColor,
           ),
         );
       }
@@ -188,14 +148,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               if (!formKey.currentState!.validate()) return;
               try {
                 final api = ref.read(apiServiceProvider);
-                await api.changePassword(
-                    currentPwdCtrl.text, newPwdCtrl.text);
+                await api.changePassword(currentPwdCtrl.text, newPwdCtrl.text);
                 if (ctx.mounted) Navigator.pop(ctx);
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Пароль изменён ✅'),
-                      backgroundColor: AppTheme.successColor,
+                    SnackBar(
+                      content: const Text('Пароль изменён ✅'),
+                      backgroundColor: context.successColor,
                     ),
                   );
                 }
@@ -204,14 +163,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Ошибка: $e'),
-                      backgroundColor: AppTheme.errorColor,
+                      backgroundColor: context.errorColor,
                     ),
                   );
                 }
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryColor,
+              backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
             ),
             child: const Text('Сменить'),
@@ -228,6 +187,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       return;
     }
 
+    final emailRegex = RegExp(r'^[\w\.-]+@[\w\.-]+\.\w{2,}$');
+    if (!emailRegex.hasMatch(_emailController.text.trim())) {
+      setState(() => _error = 'Введите корректный email');
+      return;
+    }
+
     setState(() {
       _saving = true;
       _error = null;
@@ -239,14 +204,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         'username': _usernameController.text.trim(),
         'email': _emailController.text.trim(),
       });
-
       ref.read(authProvider.notifier).checkAuth();
-
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Профиль обновлён ✅'),
-            backgroundColor: AppTheme.successColor,
+          SnackBar(
+            content: const Text('Профиль обновлён ✅'),
+            backgroundColor: context.successColor,
           ),
         );
         Navigator.pop(context);
@@ -274,39 +237,42 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Сохранить',
+                  : Text('Сохранить',
                       style: TextStyle(
                           fontWeight: FontWeight.w600,
-                          color: AppTheme.primaryColor)),
+                          color: context.primaryColor)),
             ),
         ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          // Avatar with upload button
+          // Avatar with upload
           Center(
             child: Stack(
               children: [
-                CircleAvatar(
-                  radius: 50,
-                  backgroundColor: AppTheme.primaryColor,
-                  backgroundImage: user?.avatarUrl != null
-                      ? NetworkImage(user!.avatarUrl!)
-                      : null,
+                GestureDetector(
+                  onTap: _uploadingAvatar ? null : _pickAndUploadAvatar,
                   child: _uploadingAvatar
-                      ? const CircularProgressIndicator(
-                          color: Colors.white, strokeWidth: 3)
-                      : user?.avatarUrl == null
-                          ? Text(
-                              user?.username.substring(0, 1).toUpperCase() ??
-                                  '?',
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 36,
-                                  fontWeight: FontWeight.bold),
-                            )
-                          : null,
+                      ? Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: context.primaryColor.withValues(alpha: 0.1),
+                          ),
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              color: context.primaryColor,
+                              strokeWidth: 3,
+                            ),
+                          ),
+                        )
+                      : UserAvatar(
+                          avatarUrl: user?.avatarUrl,
+                          name: user?.username ?? '?',
+                          radius: 50,
+                        ),
                 ),
                 Positioned(
                   bottom: 0,
@@ -314,11 +280,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   child: GestureDetector(
                     onTap: _uploadingAvatar ? null : _pickAndUploadAvatar,
                     child: Container(
-                      padding: const EdgeInsets.all(6),
+                      padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: AppTheme.primaryColor,
+                        gradient: AppColors.primaryGradient,
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
+                        border: Border.all(
+                            color: context.surfaceColor, width: 3),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.3),
+                            blurRadius: 8,
+                          ),
+                        ],
                       ),
                       child: const Icon(Icons.camera_alt,
                           color: Colors.white, size: 18),
@@ -327,13 +300,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
               ],
             ),
-          ),
+          ).animate().fadeIn().scale(begin: const Offset(0.8, 0.8)),
           const SizedBox(height: 8),
           Center(
             child: Text(
               'Зарегистрирован: ${_formatDate(user?.createdAt)}',
-              style:
-                  const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+              style: TextStyle(fontSize: 12, color: context.textSecondary),
             ),
           ),
           const SizedBox(height: 28),
@@ -344,62 +316,73 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               padding: const EdgeInsets.all(12),
               margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
-                color: AppTheme.errorColor.withOpacity(0.1),
+                color: context.errorColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                    color: context.errorColor.withValues(alpha: 0.3)),
               ),
               child: Text(_error!,
-                  style: const TextStyle(color: AppTheme.errorColor)),
+                  style: TextStyle(color: context.errorColor)),
             ),
 
           // Username
-          TextField(
-            controller: _usernameController,
-            decoration: const InputDecoration(
-              labelText: 'Имя пользователя',
-              prefixIcon: Icon(Icons.person_outline),
+          GlassCard(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: TextField(
+                controller: _usernameController,
+                decoration: const InputDecoration(
+                  labelText: 'Имя пользователя',
+                  prefixIcon: Icon(Icons.person_outline),
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                ),
+              ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
 
           // Email
-          TextField(
-            controller: _emailController,
-            keyboardType: TextInputType.emailAddress,
-            decoration: const InputDecoration(
-              labelText: 'Email',
-              prefixIcon: Icon(Icons.email_outlined),
+          GlassCard(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: TextField(
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  prefixIcon: Icon(Icons.email_outlined),
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                ),
+              ),
             ),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
 
           // Save button
           if (_hasChanges)
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
-                onPressed: _saving ? null : _save,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryColor,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
-                child: const Text('Сохранить изменения',
-                    style: TextStyle(fontWeight: FontWeight.w600)),
-              ),
-            ),
+            GradientButton(
+              onPressed: _saving ? null : _save,
+              gradient: AppColors.primaryGradient,
+              child: const Text('Сохранить изменения',
+                  style: TextStyle(
+                      fontWeight: FontWeight.w600, color: Colors.white)),
+            ).animate().fadeIn(),
           const SizedBox(height: 16),
 
-          // Change password button
+          // Change password
           OutlinedButton.icon(
             onPressed: _showChangePasswordDialog,
             icon: const Icon(Icons.lock_reset),
             label: const Text('Сменить пароль'),
             style: OutlinedButton.styleFrom(
-              minimumSize: const Size(double.infinity, 48),
+              minimumSize: const Size(double.infinity, 50),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(14)),
+              side: BorderSide(color: context.dividerColor),
             ),
           ),
         ],

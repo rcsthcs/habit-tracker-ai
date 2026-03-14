@@ -57,6 +57,20 @@ async def _is_completed_today(db: AsyncSession, habit_id: int) -> bool:
     return result.scalar_one_or_none() is not None
 
 
+async def _today_completions(db: AsyncSession, habit_id: int) -> int:
+    """Count how many completed logs exist for today."""
+    today = date.today()
+    result = await db.execute(
+        select(HabitLog).where(
+            HabitLog.habit_id == habit_id,
+            HabitLog.date == today,
+            HabitLog.completed == True,
+        )
+    )
+    logs = result.scalars().all()
+    return len(logs)
+
+
 async def _compute_best_streak(db: AsyncSession, habit_id: int, cooldown_days: int = 1) -> int:
     """Compute the best (longest) streak ever for a habit."""
     result = await db.execute(
@@ -146,7 +160,9 @@ async def get_habits(
         resp = HabitResponse.model_validate(habit)
         resp.current_streak = await _compute_streak(db, habit.id, habit.cooldown_days)
         resp.best_streak = await _compute_best_streak(db, habit.id, habit.cooldown_days)
-        resp.completed_today = await _is_completed_today(db, habit.id)
+        completions = await _today_completions(db, habit.id)
+        resp.today_completions = completions
+        resp.completed_today = completions >= habit.daily_target
         resp.completion_rate = await _completion_rate(db, habit.id)
         responses.append(resp)
     return responses
@@ -168,7 +184,9 @@ async def get_habit(
     resp = HabitResponse.model_validate(habit)
     resp.current_streak = await _compute_streak(db, habit.id, habit.cooldown_days)
     resp.best_streak = await _compute_best_streak(db, habit.id, habit.cooldown_days)
-    resp.completed_today = await _is_completed_today(db, habit.id)
+    completions = await _today_completions(db, habit.id)
+    resp.today_completions = completions
+    resp.completed_today = completions >= habit.daily_target
     resp.completion_rate = await _completion_rate(db, habit.id)
     return resp
 
@@ -197,7 +215,9 @@ async def update_habit(
     resp = HabitResponse.model_validate(habit)
     resp.current_streak = await _compute_streak(db, habit.id, habit.cooldown_days)
     resp.best_streak = await _compute_best_streak(db, habit.id, habit.cooldown_days)
-    resp.completed_today = await _is_completed_today(db, habit.id)
+    completions = await _today_completions(db, habit.id)
+    resp.today_completions = completions
+    resp.completed_today = completions >= habit.daily_target
     resp.completion_rate = await _completion_rate(db, habit.id)
     return resp
 
@@ -231,10 +251,27 @@ async def log_habit(
     result = await db.execute(
         select(Habit).where(Habit.id == log_data.habit_id, Habit.user_id == current_user.id)
     )
-    if not result.scalar_one_or_none():
+    habit = result.scalar_one_or_none()
+    if not habit:
         raise HTTPException(status_code=404, detail="Habit not found")
 
-    # Check for duplicate log
+    # For multi-completion habits (daily_target > 1), always create new log if not at target
+    if habit.daily_target > 1 and log_data.completed:
+        completions = await _today_completions(db, habit.id)
+        if completions >= habit.daily_target:
+            raise HTTPException(status_code=400, detail="Daily target already reached")
+        log = HabitLog(
+            **log_data.model_dump(),
+            completed_at=datetime.now(timezone.utc),
+        )
+        db.add(log)
+        await db.commit()
+        await db.refresh(log)
+        await check_and_unlock(db, current_user.id)
+        await db.commit()
+        return log
+
+    # Check for duplicate log (single-completion habits)
     result = await db.execute(
         select(HabitLog).where(
             HabitLog.habit_id == log_data.habit_id,

@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.db.database import init_db
-from app.api.routes import auth, habits, analytics, chat, recommendations, notifications, admin, friends, achievements
+from app.api.routes import auth, habits, analytics, chat, recommendations, notifications, admin, friends, achievements, mood, challenges
 from app.notifications.scheduler import create_scheduler
 import logging
 import os
@@ -57,6 +57,8 @@ app.include_router(notifications.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
 app.include_router(friends.router, prefix="/api")
 app.include_router(achievements.router, prefix="/api")
+app.include_router(mood.router, prefix="/api")
+app.include_router(challenges.router, prefix="/api")
 
 # Serve uploaded avatars as static files
 avatar_dir = "/app/data/avatars"

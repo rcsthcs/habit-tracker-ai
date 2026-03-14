@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../core/theme.dart';
+import '../core/app_colors.dart';
+import '../core/theme_extensions.dart';
 
 class StreakBadge extends StatelessWidget {
   final int streak;
@@ -16,7 +17,7 @@ class StreakBadge extends StatelessWidget {
         gradient: LinearGradient(
           colors: streak >= 7
               ? [Colors.orange, Colors.deepOrange]
-              : [AppTheme.primaryColor, AppTheme.secondaryColor],
+              : [AppColors.primary, AppColors.secondary],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -60,13 +61,13 @@ class AiTipCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tipColor = color ?? AppTheme.primaryColor;
+    final tipColor = color ?? AppColors.primary;
     return Card(
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           gradient: LinearGradient(
-            colors: [tipColor.withOpacity(0.08), tipColor.withOpacity(0.02)],
+            colors: [tipColor.withValues(alpha: 0.08), tipColor.withValues(alpha: 0.02)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -78,7 +79,7 @@ class AiTipCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: tipColor.withOpacity(0.15),
+                color: tipColor.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, color: tipColor, size: 22),
@@ -95,8 +96,8 @@ class AiTipCard extends StatelessWidget {
                           color: tipColor)),
                   const SizedBox(height: 4),
                   Text(message,
-                      style: const TextStyle(
-                          fontSize: 13, color: AppTheme.textSecondary)),
+                      style: TextStyle(
+                          fontSize: 13, color: context.textSecondary)),
                 ],
               ),
             ),

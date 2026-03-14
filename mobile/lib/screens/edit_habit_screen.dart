@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../core/theme.dart';
+import '../core/app_colors.dart';
 import '../models/habit.dart';
 import '../providers/app_providers.dart';
 
@@ -18,6 +18,7 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
   late TextEditingController _descriptionController;
   late String _selectedCategory;
   late int _cooldownDays;
+  late int _dailyTarget;
   TimeOfDay? _targetTime;
   TimeOfDay? _reminderTime;
   bool _saving = false;
@@ -50,6 +51,7 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
         TextEditingController(text: widget.habit.description);
     _selectedCategory = widget.habit.category;
     _cooldownDays = widget.habit.cooldownDays;
+    _dailyTarget = widget.habit.dailyTarget;
     _targetTime = _parseTime(widget.habit.targetTime);
     _reminderTime = _parseTime(widget.habit.reminderTime);
   }
@@ -88,6 +90,7 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
         'description': _descriptionController.text.trim(),
         'category': _selectedCategory,
         'cooldown_days': _cooldownDays,
+        'daily_target': _dailyTarget,
         'target_time': _formatTime(_targetTime),
         'reminder_time': _formatTime(_reminderTime),
       });
@@ -122,7 +125,7 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
                 : const Text('Сохранить',
                     style: TextStyle(
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.primaryColor)),
+                        color: AppColors.primary)),
           ),
         ],
       ),
@@ -163,7 +166,7 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
               return ChoiceChip(
                 label: Text(e.value, style: const TextStyle(fontSize: 12)),
                 selected: isSelected,
-                selectedColor: AppTheme.primaryColor.withOpacity(0.2),
+                selectedColor: AppColors.primary.withValues(alpha: 0.2),
                 onSelected: (_) =>
                     setState(() => _selectedCategory = e.key),
               );
@@ -183,9 +186,31 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
               return ChoiceChip(
                 label: Text(e.value, style: const TextStyle(fontSize: 12)),
                 selected: isSelected,
-                selectedColor: AppTheme.primaryColor.withOpacity(0.2),
+                selectedColor: AppColors.primary.withValues(alpha: 0.2),
                 onSelected: (_) =>
                     setState(() => _cooldownDays = e.key),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 20),
+
+          // Daily target
+          const Text('Раз в день',
+              style: TextStyle(fontWeight: FontWeight.w500)),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [1, 2, 3, 5, 10].map((t) {
+              final isSelected = _dailyTarget == t;
+              return ChoiceChip(
+                label: Text(
+                  t == 1 ? '1 (обычная)' : '$t раз',
+                  style: const TextStyle(fontSize: 12),
+                ),
+                selected: isSelected,
+                selectedColor: AppColors.primary.withValues(alpha: 0.2),
+                onSelected: (_) => setState(() => _dailyTarget = t),
               );
             }).toList(),
           ),

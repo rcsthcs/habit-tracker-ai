@@ -1,8 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../core/theme.dart';
+import '../core/app_colors.dart';
+import '../core/theme_extensions.dart';
 import '../models/friendship.dart';
 import '../providers/app_providers.dart';
+import '../widgets/user_avatar.dart';
 import 'friend_profile_screen.dart';
 
 class FriendsScreen extends ConsumerStatefulWidget {
@@ -18,6 +21,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
   final _searchController = TextEditingController();
   List<UserSearchResult> _searchResults = [];
   bool _searching = false;
+  Timer? _searchDebounce;
 
   @override
   void initState() {
@@ -30,23 +34,31 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _tabController.dispose();
     _searchController.dispose();
     super.dispose();
   }
 
-  Future<void> _search(String query) async {
+  void _onSearchChanged(String query) {
+    _searchDebounce?.cancel();
     if (query.length < 2) {
-      setState(() => _searchResults = []);
+      setState(() { _searchResults = []; _searching = false; });
       return;
     }
     setState(() => _searching = true);
+    _searchDebounce = Timer(const Duration(milliseconds: 400), () {
+      _search(query);
+    });
+  }
+
+  Future<void> _search(String query) async {
     try {
       final api = ref.read(apiServiceProvider);
       final results = await api.searchUsers(query);
-      setState(() => _searchResults = results);
+      if (mounted) setState(() => _searchResults = results);
     } catch (_) {}
-    setState(() => _searching = false);
+    if (mounted) setState(() => _searching = false);
   }
 
   @override
@@ -56,9 +68,9 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
         title: const Text('Друзья'),
         bottom: TabBar(
           controller: _tabController,
-          labelColor: AppTheme.primaryColor,
-          unselectedLabelColor: AppTheme.textSecondary,
-          indicatorColor: AppTheme.primaryColor,
+          labelColor: AppColors.primary,
+          unselectedLabelColor: context.textSecondary,
+          indicatorColor: AppColors.primary,
           labelStyle: const TextStyle(fontSize: 12),
           tabs: const [
             Tab(text: 'Друзья'),
@@ -95,13 +107,13 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.people_outline, size: 64,
-                      color: AppTheme.textSecondary.withOpacity(0.5)),
+                      color: context.textSecondary.withValues(alpha: 0.5)),
                   const SizedBox(height: 16),
-                  const Text('Пока нет друзей',
-                      style: TextStyle(fontSize: 16, color: AppTheme.textSecondary)),
+                  Text('Пока нет друзей',
+                      style: TextStyle(fontSize: 16, color: context.textSecondary)),
                   const SizedBox(height: 8),
-                  const Text('Найди друзей во вкладке «Поиск»',
-                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 13)),
+                  Text('Найди друзей во вкладке «Поиск»',
+                      style: TextStyle(color: context.textSecondary, fontSize: 13)),
                 ],
               ),
             );
@@ -122,7 +134,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                           child: const Text('Отмена')),
                       TextButton(onPressed: () => Navigator.pop(context, true),
                           child: const Text('Удалить',
-                              style: TextStyle(color: AppTheme.errorColor))),
+                              style: TextStyle(color: AppColors.error))),
                     ],
                   ),
                 );
@@ -156,9 +168,9 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
         error: (e, _) => Center(child: Text('Ошибка: $e')),
         data: (requests) {
           if (requests.isEmpty) {
-            return const Center(
+            return Center(
               child: Text('Нет входящих запросов',
-                  style: TextStyle(color: AppTheme.textSecondary)),
+                  style: TextStyle(color: context.textSecondary)),
             );
           }
           return ListView.builder(
@@ -168,15 +180,10 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
               final req = requests[i];
               return Card(
                 child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: AppTheme.primaryColor,
-                    backgroundImage: req.avatarUrl != null
-                        ? NetworkImage(req.avatarUrl!)
-                        : null,
-                    child: req.avatarUrl == null
-                        ? Text(req.username[0].toUpperCase(),
-                            style: const TextStyle(color: Colors.white))
-                        : null,
+                  leading: UserAvatar(
+                    avatarUrl: req.avatarUrl,
+                    name: req.username,
+                    radius: 20,
                   ),
                   title: Text(req.username,
                       style: const TextStyle(fontWeight: FontWeight.w600)),
@@ -186,7 +193,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                     children: [
                       IconButton(
                         icon: const Icon(Icons.check_circle,
-                            color: AppTheme.successColor),
+                            color: AppColors.success),
                         onPressed: () async {
                           await ref.read(friendsProvider.notifier)
                               .acceptRequest(req.friendshipId);
@@ -195,7 +202,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                       ),
                       IconButton(
                         icon: const Icon(Icons.cancel,
-                            color: AppTheme.errorColor),
+                            color: AppColors.error),
                         onPressed: () async {
                           await ref.read(friendsProvider.notifier)
                               .rejectRequest(req.friendshipId);
@@ -223,9 +230,9 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
         error: (e, _) => Center(child: Text('Ошибка: $e')),
         data: (requests) {
           if (requests.isEmpty) {
-            return const Center(
+            return Center(
               child: Text('Нет исходящих запросов',
-                  style: TextStyle(color: AppTheme.textSecondary)),
+                  style: TextStyle(color: context.textSecondary)),
             );
           }
           return ListView.builder(
@@ -235,20 +242,15 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
               final req = requests[i];
               return Card(
                 child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: AppTheme.primaryColor,
-                    backgroundImage: req.avatarUrl != null
-                        ? NetworkImage(req.avatarUrl!)
-                        : null,
-                    child: req.avatarUrl == null
-                        ? Text(req.username[0].toUpperCase(),
-                            style: const TextStyle(color: Colors.white))
-                        : null,
+                  leading: UserAvatar(
+                    avatarUrl: req.avatarUrl,
+                    name: req.username,
+                    radius: 20,
                   ),
                   title: Text(req.username,
                       style: const TextStyle(fontWeight: FontWeight.w600)),
                   subtitle: const Text('Ожидает подтверждения',
-                      style: TextStyle(color: AppTheme.warningColor, fontSize: 12)),
+                      style: TextStyle(color: AppColors.warning, fontSize: 12)),
                   trailing: TextButton.icon(
                     onPressed: () async {
                       try {
@@ -268,9 +270,9 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                         }
                       }
                     },
-                    icon: const Icon(Icons.close, size: 16, color: AppTheme.errorColor),
+                    icon: const Icon(Icons.close, size: 16, color: AppColors.error),
                     label: const Text('Отозвать',
-                        style: TextStyle(fontSize: 12, color: AppTheme.errorColor)),
+                        style: TextStyle(fontSize: 12, color: AppColors.error)),
                   ),
                 ),
               );
@@ -293,7 +295,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
               hintText: 'Введите имя пользователя...',
               prefixIcon: Icon(Icons.search),
             ),
-            onChanged: _search,
+            onChanged: _onSearchChanged,
           ),
         ),
         if (_searching)
@@ -308,7 +310,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                     _searchController.text.length < 2
                         ? 'Введите минимум 2 символа'
                         : 'Никого не найдено',
-                    style: const TextStyle(color: AppTheme.textSecondary),
+                    style: TextStyle(color: context.textSecondary),
                   ),
                 )
               : ListView.builder(
@@ -318,15 +320,10 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                     final user = _searchResults[i];
                     return Card(
                       child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: AppTheme.primaryColor,
-                          backgroundImage: user.avatarUrl != null
-                              ? NetworkImage(user.avatarUrl!)
-                              : null,
-                          child: user.avatarUrl == null
-                              ? Text(user.username[0].toUpperCase(),
-                                  style: const TextStyle(color: Colors.white))
-                              : null,
+                        leading: UserAvatar(
+                          avatarUrl: user.avatarUrl,
+                          name: user.username,
+                          radius: 20,
                         ),
                         title: Text(user.username,
                             style: const TextStyle(fontWeight: FontWeight.w600)),
@@ -370,9 +367,9 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                 }
               }
             : null,
-        icon: const Icon(Icons.close, size: 14, color: AppTheme.warningColor),
+        icon: const Icon(Icons.close, size: 14, color: AppColors.warning),
         label: const Text('Отозвать',
-            style: TextStyle(fontSize: 12, color: AppTheme.warningColor)),
+            style: TextStyle(fontSize: 12, color: AppColors.warning)),
       );
     }
     return ElevatedButton(
@@ -391,7 +388,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
         }
       },
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppTheme.primaryColor,
+        backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(horizontal: 16),
       ),
@@ -421,18 +418,10 @@ class _FriendCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              CircleAvatar(
+              UserAvatar(
+                avatarUrl: friend.avatarUrl,
+                name: friend.username,
                 radius: 28,
-                backgroundColor: AppTheme.primaryColor,
-                backgroundImage: friend.avatarUrl != null
-                    ? NetworkImage(friend.avatarUrl!)
-                    : null,
-                child: friend.avatarUrl == null
-                    ? Text(friend.username[0].toUpperCase(),
-                        style: const TextStyle(
-                            color: Colors.white, fontSize: 20,
-                            fontWeight: FontWeight.bold))
-                    : null,
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -446,21 +435,21 @@ class _FriendCard extends StatelessWidget {
                     Row(
                       children: [
                         Icon(Icons.person, size: 14,
-                            color: AppTheme.textSecondary.withOpacity(0.6)),
+                            color: context.textSecondary.withValues(alpha: 0.6)),
                         const SizedBox(width: 4),
-                        const Text('Нажми для просмотра профиля',
+                        Text('Нажми для просмотра профиля',
                             style: TextStyle(
-                                fontSize: 12, color: AppTheme.textSecondary)),
+                                fontSize: 12, color: context.textSecondary)),
                       ],
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right, color: AppTheme.textSecondary),
+              Icon(Icons.chevron_right, color: context.textSecondary),
               const SizedBox(width: 4),
               IconButton(
-                icon: const Icon(Icons.person_remove,
-                    color: AppTheme.textSecondary, size: 20),
+                icon: Icon(Icons.person_remove,
+                    color: context.textSecondary, size: 20),
                 onPressed: onRemove,
               ),
             ],
@@ -558,10 +547,10 @@ class _ProgressRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: AppTheme.primaryColor),
+          Icon(icon, size: 20, color: AppColors.primary),
           const SizedBox(width: 12),
           Expanded(child: Text(label,
-              style: const TextStyle(color: AppTheme.textSecondary))),
+              style: TextStyle(color: context.textSecondary))),
           Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
         ],
       ),

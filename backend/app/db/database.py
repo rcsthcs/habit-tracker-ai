@@ -29,5 +29,6 @@ async def init_db():
     async with engine.begin() as conn:
         from app.models import user, habit, habit_log, chat_message, user_activity  # noqa
         from app.models import friendship, achievement, notification  # noqa
+        from app.models import mood_log, challenge  # noqa
         await conn.run_sync(Base.metadata.create_all)
 

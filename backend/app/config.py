@@ -15,8 +15,11 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_ID: str = ""  # Set via env: GOOGLE_CLIENT_ID=xxx.apps.googleusercontent.com
 
     # LLM
+    LLM_PROVIDER: str = "auto"  # auto | ollama | gemini | fallback
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     OLLAMA_MODEL: str = "llama3.2"
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-2.0-flash"
 
     # ML
     MODEL_STORE_PATH: str = "data/models"

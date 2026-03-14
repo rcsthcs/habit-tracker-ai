@@ -12,7 +12,7 @@ from app.models.habit import Habit
 from app.models.habit_log import HabitLog
 from app.models.friendship import Friendship, FriendshipStatus
 from app.models.notification import Notification
-from app.schemas.friends import FriendshipResponse, FriendProgressResponse
+from app.schemas.friends import FriendProgressResponse
 from app.api.auth_utils import get_current_user
 from app.api.routes.habits import _compute_streak, _completion_rate
 

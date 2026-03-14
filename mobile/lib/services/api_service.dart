@@ -11,6 +11,8 @@ import '../models/achievement.dart';
 import '../models/friendship.dart';
 import '../models/notification_item.dart';
 import '../models/detailed_analytics.dart';
+import '../models/mood.dart';
+import '../models/challenge.dart';
 
 class ApiService {
   late final Dio _dio;
@@ -299,5 +301,78 @@ class ApiService {
   String getExportUrl() {
     final baseUrl = kIsWeb ? AppConfig.baseUrlWeb : AppConfig.baseUrl;
     return '$baseUrl/analytics/export';
+  }
+
+  // ─── Mood ───
+
+  Future<MoodLog> logMood(MoodLog mood) async {
+    final response = await _dio.post('/mood/', data: mood.toJson());
+    return MoodLog.fromJson(response.data);
+  }
+
+  Future<List<MoodLog>> getMoodLogs({int days = 30}) async {
+    final response =
+        await _dio.get('/mood/', queryParameters: {'days': days});
+    return (response.data as List).map((e) => MoodLog.fromJson(e)).toList();
+  }
+
+  Future<MoodLog?> getTodayMood() async {
+    final response = await _dio.get('/mood/today');
+    if (response.data == null) return null;
+    return MoodLog.fromJson(response.data);
+  }
+
+  Future<MoodAnalytics> getMoodAnalytics() async {
+    final response = await _dio.get('/mood/analytics');
+    return MoodAnalytics.fromJson(response.data);
+  }
+
+  // ─── Challenges ───
+
+  Future<List<Challenge>> getChallenges({String? status}) async {
+    final params = <String, dynamic>{};
+    if (status != null) params['status_filter'] = status;
+    final response =
+        await _dio.get('/challenges/', queryParameters: params);
+    return (response.data as List)
+        .map((e) => Challenge.fromJson(e))
+        .toList();
+  }
+
+  Future<List<Challenge>> generateChallenges() async {
+    final response = await _dio.post('/challenges/generate');
+    return (response.data as List)
+        .map((e) => Challenge.fromJson(e))
+        .toList();
+  }
+
+  Future<Challenge> updateChallengeProgress(int challengeId) async {
+    final response = await _dio.post('/challenges/$challengeId/progress');
+    return Challenge.fromJson(response.data);
+  }
+
+  // ─── Streak Recovery ───
+
+  Future<List<StreakRecovery>> getStreakRecovery() async {
+    final response = await _dio.get('/challenges/streak-recovery');
+    return (response.data as List)
+        .map((e) => StreakRecovery.fromJson(e))
+        .toList();
+  }
+
+  // ─── Weekly Report ───
+
+  Future<WeeklyReport?> getWeeklyReport() async {
+    final response = await _dio.get('/challenges/weekly-report');
+    if (response.data == null) return null;
+    return WeeklyReport.fromJson(response.data);
+  }
+
+  Future<List<WeeklyReport>> getWeeklyReports({int limit = 8}) async {
+    final response = await _dio.get('/challenges/weekly-reports',
+        queryParameters: {'limit': limit});
+    return (response.data as List)
+        .map((e) => WeeklyReport.fromJson(e))
+        .toList();
   }
 }

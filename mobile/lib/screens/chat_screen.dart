@@ -1,6 +1,9 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../core/theme.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import '../core/app_colors.dart';
+import '../core/theme_extensions.dart';
 import '../providers/app_providers.dart';
 import '../models/chat_message.dart';
 
@@ -65,12 +68,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Row(
+        title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.auto_awesome, color: AppTheme.primaryColor, size: 22),
-            SizedBox(width: 8),
-            Text('AI Помощник'),
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                gradient: AppColors.primaryGradient,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.auto_awesome, color: Colors.white, size: 18),
+            ),
+            const SizedBox(width: 10),
+            const Text('AI Помощник'),
           ],
         ),
       ),
@@ -92,73 +102,75 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
           // Typing indicator
           if (_sending)
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
               child: Row(
                 children: [
                   SizedBox(
                     width: 16,
                     height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: context.primaryColor),
                   ),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 8),
                   Text('AI думает...',
                       style: TextStyle(
-                          color: AppTheme.textSecondary, fontSize: 13)),
+                          color: context.textSecondary, fontSize: 13)),
                 ],
               ),
             ),
 
-          // Input
-          Container(
-            padding: const EdgeInsets.fromLTRB(16, 8, 8, 16),
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceColor,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, -2),
+          // Input with glass effect
+          ClipRRect(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(16, 8, 8, 16),
+                decoration: BoxDecoration(
+                  color: context.glassColor,
+                  border: Border(
+                    top: BorderSide(color: context.dividerColor, width: 0.5),
+                  ),
                 ),
-              ],
-            ),
-            child: SafeArea(
-              top: false,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _controller,
-                      decoration: InputDecoration(
-                        hintText: 'Спроси что-нибудь...',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
-                          borderSide: BorderSide.none,
+                child: SafeArea(
+                  top: false,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _controller,
+                          decoration: InputDecoration(
+                            hintText: 'Спроси что-нибудь...',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(24),
+                              borderSide: BorderSide.none,
+                            ),
+                            filled: true,
+                            fillColor: context.surfaceColor,
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 20, vertical: 12),
+                          ),
+                          maxLines: 3,
+                          minLines: 1,
+                          textInputAction: TextInputAction.send,
+                          onSubmitted: (_) => _send(),
                         ),
-                        filled: true,
-                        fillColor: AppTheme.backgroundColor,
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 20, vertical: 12),
                       ),
-                      maxLines: 3,
-                      minLines: 1,
-                      textInputAction: TextInputAction.send,
-                      onSubmitted: (_) => _send(),
-                    ),
+                      const SizedBox(width: 8),
+                      Container(
+                        decoration: const BoxDecoration(
+                          gradient: AppColors.primaryGradient,
+                          shape: BoxShape.circle,
+                        ),
+                        child: IconButton(
+                          onPressed: _sending ? null : _send,
+                          icon: const Icon(Icons.send_rounded,
+                              color: Colors.white, size: 20),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  Container(
-                    decoration: const BoxDecoration(
-                      color: AppTheme.primaryColor,
-                      shape: BoxShape.circle,
-                    ),
-                    child: IconButton(
-                      onPressed: _sending ? null : _send,
-                      icon: const Icon(Icons.send_rounded,
-                          color: Colors.white, size: 20),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ),
@@ -178,22 +190,28 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               width: 72,
               height: 72,
               decoration: BoxDecoration(
-                color: AppTheme.primaryColor.withOpacity(0.1),
+                gradient: AppColors.primaryGradient,
                 borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.3),
+                    blurRadius: 16,
+                  ),
+                ],
               ),
               child: const Icon(Icons.auto_awesome,
-                  color: AppTheme.primaryColor, size: 36),
-            ),
+                  color: Colors.white, size: 36),
+            ).animate().scale(begin: const Offset(0.5, 0.5), curve: Curves.easeOutBack),
             const SizedBox(height: 20),
             const Text(
               'AI Помощник по привычкам',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Спроси совет, попроси мотивацию или просто поболтай о своих целях!',
               textAlign: TextAlign.center,
-              style: TextStyle(color: AppTheme.textSecondary),
+              style: TextStyle(color: context.textSecondary),
             ),
             const SizedBox(height: 24),
             Wrap(
@@ -242,26 +260,38 @@ class _MessageBubble extends StatelessWidget {
         constraints:
             BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.78),
         decoration: BoxDecoration(
+          gradient: isUser ? AppColors.primaryGradient : null,
           color: isUser
-              ? AppTheme.primaryColor
-              : AppTheme.primaryColor.withOpacity(0.08),
+              ? null
+              : context.isDark
+                  ? AppColors.darkSurfaceVariant
+                  : AppColors.primary.withValues(alpha: 0.08),
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(18),
             topRight: const Radius.circular(18),
             bottomLeft: Radius.circular(isUser ? 18 : 4),
             bottomRight: Radius.circular(isUser ? 4 : 18),
           ),
+          boxShadow: isUser
+              ? [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
         ),
         child: Text(
           message.content,
           style: TextStyle(
-            color: isUser ? Colors.white : AppTheme.textPrimary,
+            color: isUser ? Colors.white : context.textPrimary,
             fontSize: 14.5,
             height: 1.4,
           ),
         ),
       ),
-    );
+    ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.1);
   }
 }
 
@@ -276,8 +306,8 @@ class _QuickAction extends StatelessWidget {
     return ActionChip(
       label: Text(label, style: const TextStyle(fontSize: 13)),
       onPressed: onTap,
-      backgroundColor: AppTheme.primaryColor.withOpacity(0.08),
-      side: BorderSide(color: AppTheme.primaryColor.withOpacity(0.2)),
+      backgroundColor: AppColors.primary.withValues(alpha: 0.08),
+      side: BorderSide(color: AppColors.primary.withValues(alpha: 0.2)),
     );
   }
 }

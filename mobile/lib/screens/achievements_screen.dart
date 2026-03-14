@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../core/theme.dart';
+import '../core/app_colors.dart';
+import '../core/theme_extensions.dart';
 import '../models/achievement.dart';
 import '../providers/app_providers.dart';
 
@@ -32,13 +33,13 @@ class AchievementsScreen extends ConsumerWidget {
                         style: const TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
-                          color: AppTheme.primaryColor,
+                          color: AppColors.primary,
                         ),
                       ),
                       const SizedBox(height: 4),
-                      const Text('достижений разблокировано',
+                      Text('достижений разблокировано',
                           style: TextStyle(
-                              color: AppTheme.textSecondary, fontSize: 14)),
+                              color: context.textSecondary, fontSize: 14)),
                     ],
                   ),
                 ),
@@ -51,8 +52,8 @@ class AchievementsScreen extends ConsumerWidget {
                         ? 0
                         : unlocked / achievements.length,
                     minHeight: 8,
-                    backgroundColor: AppTheme.primaryColor.withOpacity(0.15),
-                    color: AppTheme.primaryColor,
+                    backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+                    color: AppColors.primary,
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -88,9 +89,13 @@ class _AchievementCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final unlocked = achievement.unlocked;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Card(
       elevation: unlocked ? 3 : 1,
-      color: unlocked ? AppTheme.surfaceColor : Colors.grey[100],
+      color: unlocked
+          ? (isDark ? AppColors.darkSurface : AppColors.lightSurface)
+          : (isDark ? Colors.grey[850] : Colors.grey[100]),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: () => _showDetail(context),
@@ -113,7 +118,7 @@ class _AchievementCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: unlocked ? AppTheme.textPrimary : Colors.grey,
+                  color: unlocked ? context.textPrimary : Colors.grey,
                 ),
               ),
               const SizedBox(height: 4),
@@ -124,7 +129,7 @@ class _AchievementCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontSize: 11,
-                  color: unlocked ? AppTheme.textSecondary : Colors.grey[400],
+                  color: unlocked ? context.textSecondary : Colors.grey[400],
                 ),
               ),
               if (unlocked && achievement.unlockedAt != null) ...[
@@ -132,7 +137,7 @@ class _AchievementCard extends StatelessWidget {
                 Text(
                   '${achievement.unlockedAt!.day}.${achievement.unlockedAt!.month.toString().padLeft(2, '0')}.${achievement.unlockedAt!.year}',
                   style: const TextStyle(
-                      fontSize: 10, color: AppTheme.successColor),
+                      fontSize: 10, color: AppColors.success),
                 ),
               ],
             ],
@@ -157,16 +162,16 @@ class _AchievementCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text(achievement.description,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: AppTheme.textSecondary)),
+                style: TextStyle(color: context.textSecondary)),
             const SizedBox(height: 12),
             if (achievement.unlocked)
               const Text('✅ Разблокировано!',
                   style: TextStyle(
-                      color: AppTheme.successColor,
+                      color: AppColors.success,
                       fontWeight: FontWeight.w600))
             else
-              const Text('🔒 Ещё не получено',
-                  style: TextStyle(color: AppTheme.textSecondary)),
+              Text('🔒 Ещё не получено',
+                  style: TextStyle(color: context.textSecondary)),
           ],
         ),
         actions: [

@@ -1,6 +1,6 @@
 FROM debian:bookworm-slim AS build
 
-ARG FLUTTER_VERSION=3.24.5
+ARG FLUTTER_VERSION=3.41.2
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \

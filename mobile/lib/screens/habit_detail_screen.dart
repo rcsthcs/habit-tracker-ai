@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
-import '../core/theme.dart';
+import '../core/app_colors.dart';
+import '../core/theme_extensions.dart';
 import '../models/habit.dart';
 import '../models/habit_log.dart';
 import '../providers/app_providers.dart';
@@ -64,7 +65,7 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
         title: Text(habit.name),
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit_outlined, color: AppTheme.primaryColor),
+            icon: const Icon(Icons.edit_outlined, color: AppColors.primary),
             onPressed: () async {
               final updated = await Navigator.push<bool>(
                 context,
@@ -84,7 +85,7 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.delete_outline, color: AppTheme.errorColor),
+            icon: const Icon(Icons.delete_outline, color: AppColors.error),
             onPressed: () => _confirmDelete(context),
           ),
         ],
@@ -114,8 +115,8 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: habit.completedToday
-                            ? AppTheme.successColor
-                            : AppTheme.primaryColor,
+                            ? AppColors.success
+                            : AppColors.primary,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14)),
@@ -141,8 +142,8 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
                             const SizedBox(height: 4),
                             Text(
                               _categoryLabel(habit.category),
-                              style: const TextStyle(
-                                  color: AppTheme.textSecondary, fontSize: 14),
+                              style: TextStyle(
+                                  color: context.textSecondary, fontSize: 14),
                             ),
                             const SizedBox(height: 8),
                             Row(
@@ -166,7 +167,7 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
                                   value:
                                       '${habit.completionRate.toStringAsFixed(0)}%',
                                   label: 'выполнение',
-                                  color: AppTheme.primaryColor,
+                                  color: AppColors.primary,
                                 ),
                               ],
                             ),
@@ -249,11 +250,11 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
                   const SizedBox(height: 12),
                   ..._logs.take(20).map((log) => _LogTile(log: log)),
                   if (_logs.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.all(20),
+                    Padding(
+                      padding: const EdgeInsets.all(20),
                       child: Text('Пока нет записей',
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: AppTheme.textSecondary)),
+                          style: TextStyle(color: context.textSecondary)),
                     ),
                 ],
               ),
@@ -285,9 +286,9 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
         if (completed == true) {
           color = _habit.colorValue;
         } else if (completed == false) {
-          color = AppTheme.errorColor.withOpacity(0.3);
+          color = AppColors.error.withValues(alpha: 0.3);
         } else {
-          color = Colors.grey.withOpacity(0.15);
+          color = Colors.grey.withValues(alpha: 0.15);
         }
 
         return Tooltip(
@@ -304,7 +305,7 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
                 '${day.day}',
                 style: TextStyle(
                   fontSize: 10,
-                  color: completed == true ? Colors.white : AppTheme.textSecondary,
+                  color: completed == true ? Colors.white : context.textSecondary,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -363,10 +364,10 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
             BarChartRodData(
               toY: rate,
               color: rate >= 70
-                  ? AppTheme.successColor
+                  ? AppColors.success
                   : rate >= 40
-                      ? AppTheme.warningColor
-                      : AppTheme.errorColor.withOpacity(0.7),
+                      ? AppColors.warning
+                      : AppColors.error.withValues(alpha: 0.7),
               width: 22,
               borderRadius:
                   const BorderRadius.vertical(top: Radius.circular(6)),
@@ -399,7 +400,7 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
               }
             },
             child: const Text('Удалить',
-                style: TextStyle(color: AppTheme.errorColor)),
+                style: TextStyle(color: AppColors.error)),
           ),
         ],
       ),
@@ -464,7 +465,7 @@ class _MiniStat extends StatelessWidget {
         const SizedBox(width: 2),
         Text(label,
             style:
-                const TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+                TextStyle(color: context.textSecondary, fontSize: 12)),
       ],
     );
   }
@@ -481,7 +482,7 @@ class _LogTile extends StatelessWidget {
       dense: true,
       leading: Icon(
         log.completed ? Icons.check_circle : Icons.cancel,
-        color: log.completed ? AppTheme.successColor : AppTheme.errorColor,
+        color: log.completed ? AppColors.success : AppColors.error,
         size: 22,
       ),
       title: Text(
@@ -495,7 +496,7 @@ class _LogTile extends StatelessWidget {
           ? Text(
               '${log.completedAt!.hour}:${log.completedAt!.minute.toString().padLeft(2, '0')}',
               style:
-                  const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                  TextStyle(color: context.textSecondary, fontSize: 12),
             )
           : null,
     );
@@ -519,11 +520,11 @@ class _InfoRow extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: AppTheme.textSecondary),
+          Icon(icon, size: 18, color: context.textSecondary),
           const SizedBox(width: 10),
           Text(label,
-              style: const TextStyle(
-                  fontSize: 13, color: AppTheme.textSecondary)),
+              style: TextStyle(
+                  fontSize: 13, color: context.textSecondary)),
           const Spacer(),
           Flexible(
             child: Text(value,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../core/theme.dart';
+import '../core/app_colors.dart';
+import '../core/theme_extensions.dart';
 import '../providers/app_providers.dart';
 
 class NotificationsScreen extends ConsumerStatefulWidget {
@@ -46,7 +47,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                       TextButton(
                         onPressed: () => Navigator.pop(context, true),
                         child: const Text('Очистить',
-                            style: TextStyle(color: AppTheme.errorColor)),
+                            style: TextStyle(color: AppColors.error)),
                       ),
                     ],
                   ),
@@ -62,7 +63,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                 value: 'read_all',
                 child: Row(
                   children: [
-                    Icon(Icons.done_all, size: 20, color: AppTheme.primaryColor),
+                    Icon(Icons.done_all, size: 20, color: AppColors.primary),
                     SizedBox(width: 8),
                     Text('Прочитать все'),
                   ],
@@ -72,7 +73,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                 value: 'clear_all',
                 child: Row(
                   children: [
-                    Icon(Icons.delete_sweep, size: 20, color: AppTheme.errorColor),
+                    Icon(Icons.delete_sweep, size: 20, color: AppColors.error),
                     SizedBox(width: 8),
                     Text('Очистить все'),
                   ],
@@ -94,22 +95,22 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: AppTheme.primaryColor.withOpacity(0.08),
+                      color: AppColors.primary.withValues(alpha: 0.08),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.notifications_none,
-                        size: 48, color: AppTheme.textSecondary),
+                    child: Icon(Icons.notifications_none,
+                        size: 48, color: context.textSecondary),
                   ),
                   const SizedBox(height: 16),
-                  const Text('Нет уведомлений',
+                  Text('Нет уведомлений',
                       style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
-                          color: AppTheme.textSecondary)),
+                          color: context.textSecondary)),
                   const SizedBox(height: 4),
-                  const Text('Здесь появятся ваши уведомления',
+                  Text('Здесь появятся ваши уведомления',
                       style: TextStyle(
-                          fontSize: 13, color: AppTheme.textSecondary)),
+                          fontSize: 13, color: context.textSecondary)),
                 ],
               ),
             );
@@ -130,10 +131,10 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                   return Padding(
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
                     child: Text(group,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: AppTheme.textSecondary,
+                          color: context.textSecondary,
                         )),
                   );
                 }
@@ -147,11 +148,11 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                     margin: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppTheme.errorColor.withOpacity(0.1),
+                      color: AppColors.error.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: const Icon(Icons.delete_outline,
-                        color: AppTheme.errorColor),
+                        color: AppColors.error),
                   ),
                   onDismissed: (_) async {
                     await ref
@@ -180,7 +181,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                           border: !n.notification.isRead
                               ? Border.all(
                                   color:
-                                      AppTheme.primaryColor.withOpacity(0.3),
+                                      AppColors.primary.withValues(alpha: 0.3),
                                   width: 1)
                               : null,
                         ),
@@ -194,7 +195,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                                 padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
                                   color: _getTypeColor(n.notification.type)
-                                      .withOpacity(0.12),
+                                      .withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Icon(
@@ -229,7 +230,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                                             width: 8,
                                             height: 8,
                                             decoration: const BoxDecoration(
-                                              color: AppTheme.primaryColor,
+                                              color: AppColors.primary,
                                               shape: BoxShape.circle,
                                             ),
                                           ),
@@ -242,8 +243,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                                         style: TextStyle(
                                           fontSize: 13,
                                           color: n.notification.isRead
-                                              ? AppTheme.textSecondary
-                                              : AppTheme.textPrimary,
+                                              ? context.textSecondary
+                                              : context.textPrimary,
                                         ),
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
@@ -252,9 +253,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                                     const SizedBox(height: 4),
                                     Text(
                                       _timeAgo(n.notification.createdAt),
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                           fontSize: 11,
-                                          color: AppTheme.textSecondary),
+                                          color: context.textSecondary),
                                     ),
                                   ],
                                 ),
@@ -323,12 +324,12 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         return Colors.amber;
       case 'friend_request':
       case 'friend_accepted':
-        return AppTheme.primaryColor;
+        return AppColors.primary;
       case 'reminder':
       case 'evening_reminder':
-        return AppTheme.warningColor;
+        return AppColors.warning;
       default:
-        return AppTheme.textSecondary;
+        return context.textSecondary;
     }
   }
 

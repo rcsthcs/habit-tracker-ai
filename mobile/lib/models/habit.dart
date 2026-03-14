@@ -8,6 +8,7 @@ class Habit {
   final String category;
   final String frequency;
   final int cooldownDays;
+  final int dailyTarget;
   final String? targetTime;
   final String? reminderTime;
   final String color;
@@ -17,6 +18,7 @@ class Habit {
   final int currentStreak;
   final int bestStreak;
   final bool completedToday;
+  final int todayCompletions;
   final double completionRate;
 
   Habit({
@@ -27,6 +29,7 @@ class Habit {
     required this.category,
     required this.frequency,
     this.cooldownDays = 1,
+    this.dailyTarget = 1,
     this.targetTime,
     this.reminderTime,
     required this.color,
@@ -36,6 +39,7 @@ class Habit {
     this.currentStreak = 0,
     this.bestStreak = 0,
     this.completedToday = false,
+    this.todayCompletions = 0,
     this.completionRate = 0.0,
   });
 
@@ -48,6 +52,7 @@ class Habit {
       category: json['category'] ?? 'other',
       frequency: json['frequency'] ?? 'daily',
       cooldownDays: json['cooldown_days'] ?? 1,
+      dailyTarget: json['daily_target'] ?? 1,
       targetTime: json['target_time'],
       reminderTime: json['reminder_time'],
       color: json['color'] ?? '#4CAF50',
@@ -57,6 +62,7 @@ class Habit {
       currentStreak: json['current_streak'] ?? 0,
       bestStreak: json['best_streak'] ?? 0,
       completedToday: json['completed_today'] ?? false,
+      todayCompletions: json['today_completions'] ?? 0,
       completionRate: (json['completion_rate'] ?? 0.0).toDouble(),
     );
   }
@@ -68,6 +74,7 @@ class Habit {
       'category': category,
       'frequency': frequency,
       'cooldown_days': cooldownDays,
+      'daily_target': dailyTarget,
       'target_time': targetTime,
       'reminder_time': reminderTime,
       'color': color,

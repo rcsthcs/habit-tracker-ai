@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../core/theme.dart';
+import '../core/app_colors.dart';
+import '../core/theme_extensions.dart';
 import '../models/habit.dart';
 import '../providers/app_providers.dart';
 import '../widgets/habit_card.dart';
+import '../widgets/user_avatar.dart';
 import 'habit_detail_screen.dart';
+import 'mood_screen.dart';
+import 'challenges_screen.dart';
+import 'weekly_report_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -24,9 +29,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final nameController = TextEditingController();
     String selectedCategory = 'health';
     int cooldownDays = 1;
+    int dailyTarget = 1;
     TimeOfDay? targetTime;
     TimeOfDay? reminderTime;
     List<String> suggestions = [];
+    bool isSubmitting = false;
 
     final categories = {
       'health': '🏥 Здоровье',
@@ -97,7 +104,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         label: Text(e.value, style: const TextStyle(fontSize: 12)),
                         selected: isSelected,
                         selectedColor:
-                            AppTheme.primaryColor.withOpacity(0.2),
+                            AppColors.primary.withValues(alpha: 0.2),
                         onSelected: (_) {
                           setSheetState(() {
                             selectedCategory = e.key;
@@ -112,11 +119,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                   // Name suggestions
                   if (suggestions.isNotEmpty) ...[
-                    const Text('Рекомендации',
+                    Text('Рекомендации',
                         style: TextStyle(
                             fontWeight: FontWeight.w500,
                             fontSize: 13,
-                            color: AppTheme.textSecondary)),
+                            color: context.textSecondary)),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 6,
@@ -132,7 +139,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               );
                             });
                           },
-                          backgroundColor: AppTheme.primaryColor.withOpacity(0.08),
+                          backgroundColor: AppColors.primary.withValues(alpha: 0.08),
                         );
                       }).toList(),
                     ),
@@ -163,9 +170,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       return ChoiceChip(
                         label: Text(e.value, style: const TextStyle(fontSize: 12)),
                         selected: isSelected,
-                        selectedColor: AppTheme.primaryColor.withOpacity(0.2),
+                        selectedColor: AppColors.primary.withValues(alpha: 0.2),
                         onSelected: (_) {
                           setSheetState(() => cooldownDays = e.key);
+                        },
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Daily target (multi-completion)
+                  const Text('Раз в день',
+                      style: TextStyle(fontWeight: FontWeight.w500)),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [1, 2, 3, 5, 10].map((t) {
+                      final isSelected = dailyTarget == t;
+                      return ChoiceChip(
+                        label: Text(
+                          t == 1 ? '1 (обычная)' : '$t раз',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        selected: isSelected,
+                        selectedColor: AppColors.primary.withValues(alpha: 0.2),
+                        onSelected: (_) {
+                          setSheetState(() => dailyTarget = t);
                         },
                       );
                     }).toList(),
@@ -225,30 +256,60 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     width: double.infinity,
                     height: 48,
                     child: ElevatedButton(
-                      onPressed: () async {
-                        if (nameController.text.isEmpty) return;
+                      onPressed: isSubmitting ? null : () async {
+                        final name = nameController.text.trim();
+                        if (name.isEmpty) return;
+
+                        // Check for duplicate habit names
+                        final existingHabits = ref.read(habitsProvider).valueOrNull ?? [];
+                        if (existingHabits.any((h) => h.name.toLowerCase() == name.toLowerCase())) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Привычка с таким названием уже существует')),
+                          );
+                          return;
+                        }
+
+                        setSheetState(() => isSubmitting = true);
                         String? formatTime(TimeOfDay? t) =>
                             t != null
                                 ? '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}'
                                 : null;
 
-                        await ref.read(habitsProvider.notifier).createHabit({
-                          'name': nameController.text,
-                          'category': selectedCategory,
-                          'frequency': 'daily',
-                          'cooldown_days': cooldownDays,
-                          'target_time': formatTime(targetTime),
-                          'reminder_time': formatTime(reminderTime),
-                        });
-                        if (mounted) Navigator.pop(ctx);
+                        try {
+                          await ref.read(habitsProvider.notifier).createHabit({
+                            'name': name,
+                            'category': selectedCategory,
+                            'frequency': 'daily',
+                            'cooldown_days': cooldownDays,
+                            'daily_target': dailyTarget,
+                            'target_time': formatTime(targetTime),
+                            'reminder_time': formatTime(reminderTime),
+                          });
+                          if (mounted) Navigator.pop(ctx);
+                        } catch (e) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Ошибка: $e')),
+                            );
+                          }
+                        } finally {
+                          if (mounted) setSheetState(() => isSubmitting = false);
+                        }
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryColor,
+                        backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12)),
                       ),
-                      child: const Text('Добавить',
+                      child: isSubmitting
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                  color: Colors.white, strokeWidth: 2),
+                            )
+                          : const Text('Добавить',
                           style: TextStyle(fontWeight: FontWeight.w600)),
                     ),
                   ),
@@ -275,16 +336,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             if (authState.user != null)
               Text(
                 'Привет, ${authState.user!.username} 👋',
-                style: const TextStyle(
-                    fontSize: 13, color: AppTheme.textSecondary),
+                style: TextStyle(
+                    fontSize: 13, color: context.textSecondary),
               ),
           ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () => ref.read(authProvider.notifier).logout(),
-          ),
+          if (authState.user != null)
+            Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: UserAvatar(
+                avatarUrl: authState.user!.avatarUrl,
+                name: authState.user!.username,
+                radius: 18,
+              ),
+            ),
         ],
       ),
       body: habitsAsync.when(
@@ -293,7 +359,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline, size: 48, color: AppTheme.errorColor),
+              Icon(Icons.error_outline, size: 48, color: context.errorColor),
               const SizedBox(height: 16),
               Text('Ошибка загрузки: $e'),
               const SizedBox(height: 16),
@@ -311,22 +377,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.add_task,
-                      size: 72, color: AppTheme.textSecondary),
+                  Icon(Icons.add_task,
+                      size: 72, color: context.textSecondary),
                   const SizedBox(height: 16),
-                  const Text('Пока нет привычек',
+                  Text('Пока нет привычек',
                       style: TextStyle(
-                          fontSize: 18, color: AppTheme.textSecondary)),
+                          fontSize: 18, color: context.textSecondary)),
                   const SizedBox(height: 8),
-                  const Text('Добавь первую и начни свой путь! 🚀',
-                      style: TextStyle(color: AppTheme.textSecondary)),
+                  Text('Добавь первую и начни свой путь! 🚀',
+                      style: TextStyle(color: context.textSecondary)),
                   const SizedBox(height: 24),
                   ElevatedButton.icon(
                     onPressed: _showAddHabitDialog,
                     icon: const Icon(Icons.add),
                     label: const Text('Добавить привычку'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryColor,
+                      backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
                     ),
                   ),
@@ -368,10 +434,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               value: progress,
                               strokeWidth: 6,
                               backgroundColor:
-                                  AppTheme.primaryColor.withOpacity(0.15),
+                                  AppColors.primary.withValues(alpha: 0.15),
                               color: progress >= 1.0
-                                  ? AppTheme.successColor
-                                  : AppTheme.primaryColor,
+                                  ? AppColors.success
+                                  : AppColors.primary,
                             ),
                             Center(
                               child: Text(
@@ -380,8 +446,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                   color: progress >= 1.0
-                                      ? AppTheme.successColor
-                                      : AppTheme.primaryColor,
+                                      ? AppColors.success
+                                      : AppColors.primary,
                                 ),
                               ),
                             ),
@@ -408,8 +474,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               style: TextStyle(
                                 fontSize: 13,
                                 color: progress >= 1.0
-                                    ? AppTheme.successColor
-                                    : AppTheme.textSecondary,
+                                    ? AppColors.success
+                                    : context.textSecondary,
                               ),
                             ),
                           ],
@@ -419,12 +485,52 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
+
+                // Quick AI actions
+                SizedBox(
+                  height: 44,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    children: [
+                      _QuickAction(
+                        icon: Icons.mood,
+                        label: 'Настроение',
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFFF9800), Color(0xFFFF5722)],
+                        ),
+                        onTap: () => Navigator.push(context,
+                            MaterialPageRoute(builder: (_) => const MoodScreen())),
+                      ),
+                      const SizedBox(width: 8),
+                      _QuickAction(
+                        icon: Icons.flag,
+                        label: 'Челленджи',
+                        gradient: AppColors.primaryGradient,
+                        onTap: () => Navigator.push(context,
+                            MaterialPageRoute(builder: (_) => const ChallengesScreen())),
+                      ),
+                      const SizedBox(width: 8),
+                      _QuickAction(
+                        icon: Icons.auto_awesome,
+                        label: 'Отчёт',
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF4FC3F7), Color(0xFF2196F3)],
+                        ),
+                        onTap: () => Navigator.push(context,
+                            MaterialPageRoute(builder: (_) => const WeeklyReportScreen())),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+
                 // Celebration card when 100%
                 if (progress >= 1.0)
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Card(
-                      color: AppTheme.successColor.withOpacity(0.1),
+                      color: AppColors.success.withValues(alpha: 0.1),
                       child: const Padding(
                         padding: EdgeInsets.all(16),
                         child: Row(
@@ -451,8 +557,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       habit: habit,
                       isCompletedToday: habit.completedToday,
                       onToggle: () {
-                        ref.read(habitsProvider.notifier).toggleHabit(
-                            habit.id, !habit.completedToday);
+                        if (habit.dailyTarget > 1) {
+                          // Multi-completion: always add +1 unless already done
+                          if (!habit.completedToday) {
+                            ref.read(habitsProvider.notifier).toggleHabit(
+                                habit.id, true);
+                          }
+                        } else {
+                          ref.read(habitsProvider.notifier).toggleHabit(
+                              habit.id, !habit.completedToday);
+                        }
                       },
                       onDelete: () {
                         ref.read(habitsProvider.notifier).deleteHabit(habit.id);
@@ -475,6 +589,60 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddHabitDialog,
         child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
+
+class _QuickAction extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Gradient gradient;
+  final VoidCallback onTap;
+
+  const _QuickAction({
+    required this.icon,
+    required this.label,
+    required this.gradient,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            gradient: gradient,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: (gradient as LinearGradient).colors.first.withValues(alpha: 0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: Colors.white, size: 18),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -28,3 +28,6 @@ class User(Base):
     notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
     sent_friendships = relationship("Friendship", foreign_keys="[Friendship.user_id]", back_populates="user", cascade="all, delete-orphan")
     received_friendships = relationship("Friendship", foreign_keys="[Friendship.friend_id]", back_populates="friend", cascade="all, delete-orphan")
+    mood_logs = relationship("MoodLog", back_populates="user", cascade="all, delete-orphan")
+    challenges = relationship("Challenge", back_populates="user", cascade="all, delete-orphan")
+    weekly_reports = relationship("WeeklyReport", back_populates="user", cascade="all, delete-orphan")

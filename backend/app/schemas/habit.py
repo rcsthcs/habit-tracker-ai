@@ -10,6 +10,7 @@ class HabitCreate(BaseModel):
     category: HabitCategory = HabitCategory.OTHER
     frequency: HabitFrequency = HabitFrequency.DAILY
     cooldown_days: int = 1  # 1=каждый день, 2=через день...
+    daily_target: int = 1  # сколько раз в день выполнять
     target_time: str | None = None  # HH:MM — когда выполнять
     reminder_time: str | None = None  # HH:MM — когда push
     color: str = "#4CAF50"
@@ -22,6 +23,7 @@ class HabitUpdate(BaseModel):
     category: HabitCategory | None = None
     frequency: HabitFrequency | None = None
     cooldown_days: int | None = None
+    daily_target: int | None = None
     target_time: str | None = None
     reminder_time: str | None = None
     color: str | None = None
@@ -37,6 +39,7 @@ class HabitResponse(BaseModel):
     category: HabitCategory
     frequency: HabitFrequency
     cooldown_days: int = 1
+    daily_target: int = 1
     target_time: str | None
     reminder_time: str | None
     color: str
@@ -46,6 +49,7 @@ class HabitResponse(BaseModel):
     current_streak: int = 0
     best_streak: int = 0
     completed_today: bool = False
+    today_completions: int = 0
     completion_rate: float = 0.0
 
     model_config = {"from_attributes": True}

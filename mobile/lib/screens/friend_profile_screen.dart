@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../core/theme.dart';
+import '../core/app_colors.dart';
+import '../core/theme_extensions.dart';
 import '../models/friendship.dart';
 import '../providers/app_providers.dart';
+import '../widgets/user_avatar.dart';
 
 class FriendProfileScreen extends ConsumerStatefulWidget {
   final FriendInfo friend;
@@ -55,7 +57,7 @@ class _FriendProfileScreenState extends ConsumerState<FriendProfileScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Icon(Icons.error_outline,
-                          size: 48, color: AppTheme.errorColor),
+                          size: 48, color: AppColors.error),
                       const SizedBox(height: 16),
                       Text('Ошибка: $_error'),
                       const SizedBox(height: 16),
@@ -81,21 +83,10 @@ class _FriendProfileScreenState extends ConsumerState<FriendProfileScreen> {
                       Center(
                         child: Column(
                           children: [
-                            CircleAvatar(
+                            UserAvatar(
+                              avatarUrl: _progress?.avatarUrl,
+                              name: widget.friend.username,
                               radius: 50,
-                              backgroundColor: AppTheme.primaryColor,
-                              backgroundImage: _progress?.avatarUrl != null
-                                  ? NetworkImage(_progress!.avatarUrl!)
-                                  : null,
-                              child: _progress?.avatarUrl == null
-                                  ? Text(
-                                      widget.friend.username[0].toUpperCase(),
-                                      style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 36,
-                                          fontWeight: FontWeight.bold),
-                                    )
-                                  : null,
                             ),
                             const SizedBox(height: 12),
                             Text(
@@ -107,9 +98,9 @@ class _FriendProfileScreenState extends ConsumerState<FriendProfileScreen> {
                             if (widget.friend.createdAt != null)
                               Text(
                                 'Друзья с ${_formatDate(widget.friend.createdAt!)}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                     fontSize: 13,
-                                    color: AppTheme.textSecondary),
+                                    color: context.textSecondary),
                               ),
                           ],
                         ),
@@ -123,14 +114,14 @@ class _FriendProfileScreenState extends ConsumerState<FriendProfileScreen> {
                             icon: Icons.checklist,
                             label: 'Активных\nпривычек',
                             value: '${_progress?.activeHabits ?? 0}',
-                            color: AppTheme.primaryColor,
+                            color: AppColors.primary,
                           ),
                           const SizedBox(width: 12),
                           _StatTile(
                             icon: Icons.local_fire_department,
                             label: 'Лучшая\nсерия',
                             value: '${_progress?.bestStreak ?? 0} дн.',
-                            color: AppTheme.warningColor,
+                            color: AppColors.warning,
                           ),
                         ],
                       ),
@@ -142,7 +133,7 @@ class _FriendProfileScreenState extends ConsumerState<FriendProfileScreen> {
                             label: 'Общее\nвыполнение',
                             value:
                                 '${_progress?.overallCompletionRate.toStringAsFixed(0) ?? 0}%',
-                            color: AppTheme.successColor,
+                            color: AppColors.success,
                           ),
                           const SizedBox(width: 12),
                           _StatTile(
@@ -150,7 +141,7 @@ class _FriendProfileScreenState extends ConsumerState<FriendProfileScreen> {
                             label: 'Сегодня\nвыполнено',
                             value:
                                 '${_progress?.todayCompleted ?? 0}/${_progress?.todayTotal ?? 0}',
-                            color: AppTheme.secondaryColor,
+                            color: AppColors.secondary,
                           ),
                         ],
                       ),
@@ -166,20 +157,20 @@ class _FriendProfileScreenState extends ConsumerState<FriendProfileScreen> {
                                 padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
                                   color:
-                                      AppTheme.primaryColor.withOpacity(0.1),
+                                      AppColors.primary.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: const Icon(Icons.list_alt,
-                                    color: AppTheme.primaryColor),
+                                    color: AppColors.primary),
                               ),
                               const SizedBox(width: 16),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text('Всего привычек',
+                                    Text('Всего привычек',
                                         style: TextStyle(
-                                            color: AppTheme.textSecondary,
+                                            color: context.textSecondary,
                                             fontSize: 13)),
                                     Text(
                                       '${_progress?.totalHabits ?? 0}',
@@ -211,18 +202,18 @@ class _FriendProfileScreenState extends ConsumerState<FriendProfileScreen> {
                                 : 0,
                             minHeight: 12,
                             backgroundColor:
-                                AppTheme.primaryColor.withOpacity(0.1),
+                                AppColors.primary.withValues(alpha: 0.1),
                             color: _progress!.todayCompleted ==
                                     _progress!.todayTotal
-                                ? AppTheme.successColor
-                                : AppTheme.primaryColor,
+                                ? AppColors.success
+                                : AppColors.primary,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           '${_progress!.todayCompleted} из ${_progress!.todayTotal} выполнено',
-                          style: const TextStyle(
-                              fontSize: 12, color: AppTheme.textSecondary),
+                          style: TextStyle(
+                              fontSize: 12, color: context.textSecondary),
                         ),
                       ],
                     ],
@@ -272,8 +263,8 @@ class _StatTile extends StatelessWidget {
               const SizedBox(height: 4),
               Text(label,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      fontSize: 11, color: AppTheme.textSecondary)),
+                  style: TextStyle(
+                      fontSize: 11, color: context.textSecondary)),
             ],
           ),
         ),

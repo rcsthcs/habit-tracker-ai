@@ -1,6 +1,6 @@
 """
-Notification Scheduler — генерирует персонализированные напоминания.
-Записывает уведомления в БД (модель Notification).
+Notification Scheduler — генерирует персонализированные напоминания,
+проверяет челленджи и создает недельные отчёты.
 """
 from datetime import datetime, date, timezone, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
@@ -9,6 +9,8 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from app.models.habit import Habit
 from app.models.habit_log import HabitLog
 from app.models.notification import Notification
+from app.models.challenge import Challenge, ChallengeStatus
+from app.models.user import User
 from app.config import get_settings
 import logging
 
@@ -96,6 +98,109 @@ async def check_and_generate_reminders():
     logger.info(f"Reminder check completed at {now}")
 
 
+async def expire_old_challenges():
+    """Expire challenges that have passed their end date."""
+    settings = get_settings()
+    engine = create_async_engine(settings.DATABASE_URL)
+    async_session = async_sessionmaker(engine, expire_on_commit=False)
+
+    async with async_session() as db:
+        today = date.today()
+        result = await db.execute(
+            select(Challenge).where(
+                Challenge.status == ChallengeStatus.ACTIVE,
+                Challenge.end_date < today,
+            )
+        )
+        expired = result.scalars().all()
+        for c in expired:
+            c.status = ChallengeStatus.EXPIRED
+
+        # Notify users about expired challenges
+        for c in expired:
+            await _add_notification_db(
+                db, c.user_id, "challenge_expired",
+                "Челлендж завершён",
+                f"Челлендж '{c.title}' истёк. Попробуй сгенерировать новый!",
+            )
+
+        await db.commit()
+
+    await engine.dispose()
+    logger.info(f"Challenge expiry check completed, {len(expired)} expired")
+
+
+async def auto_update_challenge_progress():
+    """Auto-check and update challenge progress based on habit logs."""
+    settings = get_settings()
+    engine = create_async_engine(settings.DATABASE_URL)
+    async_session = async_sessionmaker(engine, expire_on_commit=False)
+
+    async with async_session() as db:
+        today = date.today()
+
+        # Get all active challenges
+        result = await db.execute(
+            select(Challenge).where(Challenge.status == ChallengeStatus.ACTIVE)
+        )
+        challenges = result.scalars().all()
+
+        for c in challenges:
+            if c.target_habit_id:
+                # Count completed days in challenge period
+                result = await db.execute(
+                    select(HabitLog).where(
+                        HabitLog.habit_id == c.target_habit_id,
+                        HabitLog.date >= c.start_date,
+                        HabitLog.date <= min(today, c.end_date),
+                        HabitLog.completed == True,
+                    )
+                )
+                completed_logs = result.scalars().all()
+                c.current_count = len(completed_logs)
+            else:
+                # Generic challenge: count days where ALL habits were completed
+                result = await db.execute(
+                    select(Habit).where(
+                        Habit.user_id == c.user_id,
+                        Habit.is_active == True,
+                    )
+                )
+                habits = result.scalars().all()
+                if not habits:
+                    continue
+
+                full_days = 0
+                for day_offset in range((min(today, c.end_date) - c.start_date).days + 1):
+                    check_date = c.start_date + timedelta(days=day_offset)
+                    result = await db.execute(
+                        select(HabitLog).where(
+                            HabitLog.habit_id.in_([h.id for h in habits]),
+                            HabitLog.date == check_date,
+                            HabitLog.completed == True,
+                        )
+                    )
+                    day_completed = len(result.scalars().all())
+                    if day_completed >= len(habits):
+                        full_days += 1
+                c.current_count = full_days
+
+            # Auto-complete
+            if c.current_count >= c.target_count:
+                c.status = ChallengeStatus.COMPLETED
+                c.completed_at = datetime.now(timezone.utc)
+                await _add_notification_db(
+                    db, c.user_id, "challenge_completed",
+                    "🎉 Челлендж выполнен!",
+                    f"Ты завершил '{c.title}'! {c.reward_text}",
+                )
+
+        await db.commit()
+
+    await engine.dispose()
+    logger.info("Challenge progress update completed")
+
+
 
 def create_scheduler() -> AsyncIOScheduler:
     """Create and configure the notification scheduler."""
@@ -105,6 +210,21 @@ def create_scheduler() -> AsyncIOScheduler:
         "interval",
         minutes=15,
         id="reminder_check",
+        replace_existing=True,
+    )
+    scheduler.add_job(
+        expire_old_challenges,
+        "cron",
+        hour=0,
+        minute=5,
+        id="challenge_expiry",
+        replace_existing=True,
+    )
+    scheduler.add_job(
+        auto_update_challenge_progress,
+        "interval",
+        minutes=30,
+        id="challenge_progress",
         replace_existing=True,
     )
     return scheduler

@@ -55,6 +55,7 @@ class Habit(Base):
         SAEnum(HabitFrequency), default=HabitFrequency.DAILY
     )
     cooldown_days: Mapped[int] = mapped_column(Integer, default=1)  # 1=каждый день, 2=через день, и т.д.
+    daily_target: Mapped[int] = mapped_column(Integer, default=1)  # сколько раз в день выполнять
     target_time: Mapped[str] = mapped_column(String(5), nullable=True)  # HH:MM — когда выполнять
     reminder_time: Mapped[str] = mapped_column(String(5), nullable=True)  # HH:MM — когда push-напоминание
     color: Mapped[str] = mapped_column(String(7), default="#4CAF50")
