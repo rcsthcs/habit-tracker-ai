@@ -100,6 +100,21 @@ async def get_analytics(
             most_common_hour = Counter(hours).most_common(1)[0][0]
             optimal_time = f"{most_common_hour:02d}:00"
 
+    from app.ml.pattern_analyzer import PatternAnalyzer
+    ai_insight = await PatternAnalyzer.generate_ai_insight(
+        {
+            "active_habits": len(active_habits),
+            "today_completed": today_completed,
+            "today_total": len(active_habits),
+            "overall_completion_rate": overall_rate,
+            "longest_streak": longest_streak,
+            "most_struggled_habit": most_struggled,
+            "most_consistent_habit": most_consistent,
+            "optimal_time": optimal_time,
+        },
+        current_user.username
+    )
+
     return AnalyticsResponse(
         total_habits=len(all_habits),
         active_habits=len(active_habits),
@@ -112,6 +127,7 @@ async def get_analytics(
         most_struggled_habit=most_struggled,
         optimal_time=optimal_time,
         weekly_completion=weekly,
+        ai_insight=ai_insight,
     )
 
 

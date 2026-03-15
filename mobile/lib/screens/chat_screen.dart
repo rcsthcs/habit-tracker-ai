@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import '../core/app_colors.dart';
 import '../core/theme_extensions.dart';
 import '../providers/app_providers.dart';
@@ -282,14 +283,32 @@ class _MessageBubble extends StatelessWidget {
                 ]
               : null,
         ),
-        child: Text(
-          message.content,
-          style: TextStyle(
-            color: isUser ? Colors.white : context.textPrimary,
-            fontSize: 14.5,
-            height: 1.4,
-          ),
-        ),
+        child: isUser
+            ? Text(
+                message.content,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14.5,
+                  height: 1.4,
+                ),
+              )
+            : MarkdownBody(
+                data: message.content,
+                selectable: true,
+                styleSheet: MarkdownStyleSheet(
+                  p: TextStyle(
+                    color: context.textPrimary,
+                    fontSize: 14.5,
+                    height: 1.4,
+                  ),
+                  strong: const TextStyle(fontWeight: FontWeight.bold),
+                  em: const TextStyle(fontStyle: FontStyle.italic),
+                  h1: TextStyle(color: context.textPrimary, fontSize: 20, fontWeight: FontWeight.bold),
+                  h2: TextStyle(color: context.textPrimary, fontSize: 18, fontWeight: FontWeight.bold),
+                  h3: TextStyle(color: context.textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
+                  listBullet: TextStyle(color: context.textPrimary),
+                ),
+              ),
       ),
     ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.1);
   }

@@ -160,7 +160,40 @@ class PatternAnalyzer:
         recent_rate = recent["completed"].mean() if not recent.empty else overall_rate
         day_rate = same_day["completed"].mean() if not same_day.empty else overall_rate
 
-        # Weighted average: recent data matters most
         probability = 0.5 * recent_rate + 0.3 * day_rate + 0.2 * overall_rate
         return round(float(probability), 2)
+
+    @staticmethod
+    async def generate_ai_insight(analytics_data: dict, user_name: str) -> str | None:
+        """
+        Генерирует персонализированный совет на основе аналитики с помощью LLM (например, Gemma).
+        """
+        from app.nlp.llm_provider import get_llm_provider
+        
+        provider = get_llm_provider()
+        
+        system_prompt = (
+            "Ты — AI-помощник по продуктивности и трекеру привычек. "
+            "Твоя задача — дать один короткий, добрый и персонализированный совет (максимум 2-3 предложения) на основе статистики пользователя. "
+            "Не перечисляй сухие факты, просто вдохнови и укажи на точки роста (например, если много пропусков, посоветуй сдвинуть время или начать с меньшего; если всё хорошо — похвали и посоветуй отдыхать)."
+        )
+        
+        data_str = (
+            f"Имя пользователя: {user_name}\n"
+            f"Всего активных привычек: {analytics_data.get('active_habits')}\n"
+            f"Выполнено сегодня: {analytics_data.get('today_completed')} из {analytics_data.get('today_total')}\n"
+            f"Общий процент выполнения: {analytics_data.get('overall_completion_rate')}%\n"
+            f"Лучшая серия (стрик): {analytics_data.get('longest_streak')} дней подряд\n"
+            f"Чаще всего пропускает: {analytics_data.get('most_struggled_habit') or 'нет данных'}\n"
+            f"Самая стабильная привычка: {analytics_data.get('most_consistent_habit') or 'нет данных'}\n"
+            f"Оптимальное время выполнения: {analytics_data.get('optimal_time') or 'не определено'}"
+        )
+        
+        user_message = f"Проанализируй мою статистику и дай один короткий мотивационный совет по моим привычкам.\nВот мои данные:\n{data_str}"
+        
+        try:
+            insight = await provider.generate(system_prompt, user_message)
+            return insight.strip()
+        except Exception:
+            return None
 

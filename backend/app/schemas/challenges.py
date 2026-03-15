@@ -1,5 +1,6 @@
 """Schemas for challenges and weekly reports."""
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
+import json
 from datetime import date, datetime
 from app.models.challenge import ChallengeType, ChallengeStatus
 
@@ -43,6 +44,19 @@ class WeeklyReportResponse(BaseModel):
     ai_summary: str | None
     ai_tips: list[str] = []
     created_at: datetime
+
+    @field_validator('ai_tips', mode='before')
+    @classmethod
+    def parse_ai_tips(cls, v):
+        if isinstance(v, str):
+            try:
+                parsed = json.loads(v)
+                if isinstance(parsed, list):
+                    return parsed
+                return [v] if v else []
+            except (json.JSONDecodeError, TypeError):
+                return [v] if v else []
+        return v or []
 
     model_config = {"from_attributes": True}
 

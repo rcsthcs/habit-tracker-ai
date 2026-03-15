@@ -27,10 +27,16 @@ async def get_recommendations(
     # Get log data
     df = await analyzer.get_logs_dataframe(db, current_user.id)
 
-    # Recommendations
     rule_recs = await HabitRecommender.get_rule_based_recommendations(db, current_user.id)
     collab_recs = await HabitRecommender.get_collaborative_recommendations(db, current_user.id)
-    all_recommendations = rule_recs + collab_recs
+    
+    result = await db.execute(
+        select(Habit).where(Habit.user_id == current_user.id, Habit.is_active == True)
+    )
+    user_habits_for_llm = result.scalars().all()
+    llm_recs = await HabitRecommender.get_llm_recommendations(user_habits_for_llm)
+    
+    all_recommendations = rule_recs + collab_recs + llm_recs
 
     # Tips from pattern analysis
     tips = []

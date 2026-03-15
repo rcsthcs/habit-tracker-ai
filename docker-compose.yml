@@ -10,7 +10,7 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U habits_user -d habits_db"]
+      test: [ "CMD-SHELL", "pg_isready -U habits_user -d habits_db" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -25,10 +25,13 @@ services:
     environment:
       - DATABASE_URL=postgresql+asyncpg://habits_user:habits_pass@postgres:5432/habits_db
       - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-gemma}
       - SECRET_KEY=super-secret-dev-key-change-in-production
       - LLM_PROVIDER=${LLM_PROVIDER:-auto}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.0-flash}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - OPENROUTER_MODEL=${OPENROUTER_MODEL:-stepfun/step-3.5-flash:free}
     volumes:
       - backend-data:/app/data
     depends_on:
@@ -37,7 +40,7 @@ services:
       ollama:
         condition: service_started
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -51,13 +54,21 @@ services:
     volumes:
       - ollama-data:/root/.ollama
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11434/"]
+      test: [ "CMD", "curl", "-f", "http://localhost:11434/" ]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 10s
     restart: unless-stopped
 
+  ollama-pull:
+    image: ollama/ollama:latest
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      - OLLAMA_HOST=ollama:11434
+    command: pull ${OLLAMA_MODEL:-gemma}
 volumes:
   postgres-data:
   backend-data:

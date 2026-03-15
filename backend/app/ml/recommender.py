@@ -179,3 +179,48 @@ class HabitRecommender:
 
         return suggestions[:3]
 
+    @staticmethod
+    async def get_llm_recommendations(user_habits: list[Habit]) -> list[dict]:
+        """
+        Использует LLM для генерации персональной рекомендации новой привычки 
+        в дополнение к текущим привычкам пользователя.
+        """
+        from app.nlp.llm_provider import get_llm_provider
+        import json
+        
+        if not user_habits:
+            return []
+            
+        provider = get_llm_provider()
+        
+        habit_names = [h.name for h in user_habits]
+        
+        system_prompt = (
+            "Ты — эксперт по продуктивности и трекеру привычек. Пользователь в данный момент имеет следующие привычки:\n"
+            f"{', '.join(habit_names)}\n\n"
+            "Задание: предложи 1 новую очень классную и короткую привычку, которая идеально дополнит этот список. "
+            "Например, если пользователь бегает, предложи растяжку. "
+            "Твой ответ должен содержать СТРОГО JSON-массив с одним объектом такого формата:\n"
+            '[\n'
+            '  {"type": "llm_generated", "title": "Название", "description": "Категория/Описание", "reason": "Короткая причина почему это хорошо", "category": "other"}\n'
+            ']\n'
+            "Не пиши никакого текста, кроме валидного JSON."
+        )
+        
+        user_message = "Предложи 1 новую привычку для меня."
+        
+        try:
+            response = await provider.generate(system_prompt, user_message)
+            cleaned = response.strip()
+            if cleaned.startswith("```json"):
+                cleaned = cleaned[7:]
+            if cleaned.startswith("```"):
+                cleaned = cleaned[3:]
+            if cleaned.endswith("```"):
+                cleaned = cleaned[:-3]
+            
+            data = json.loads(cleaned.strip())
+            return data if isinstance(data, list) else []
+        except Exception:
+            return []
+

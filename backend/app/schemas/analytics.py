@@ -27,6 +27,7 @@ class AnalyticsResponse(BaseModel):
     most_struggled_habit: str | None
     optimal_time: str | None
     weekly_completion: list[float]  # Last 7 days completion rates
+    ai_insight: str | None = None
 
 
 class RecommendationResponse(BaseModel):

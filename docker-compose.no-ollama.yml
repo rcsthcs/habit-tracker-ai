@@ -26,9 +26,11 @@ services:
       - DATABASE_URL=postgresql+asyncpg://habits_user:habits_pass@postgres:5432/habits_db
       - SECRET_KEY=super-secret-dev-key-change-in-production
       - OLLAMA_BASE_URL=http://localhost:11434
-      - LLM_PROVIDER=${LLM_PROVIDER:-gemini}
+      - LLM_PROVIDER=${LLM_PROVIDER:-auto}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.0-flash}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - OPENROUTER_MODEL=${OPENROUTER_MODEL:-stepfun/step-3.5-flash:free}
     volumes:
       - backend-data:/app/data
     depends_on:
