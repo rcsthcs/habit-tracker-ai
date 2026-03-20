@@ -38,6 +38,8 @@ class _HabitAppState extends ConsumerState<HabitApp> {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
+      themeAnimationDuration: const Duration(milliseconds: 300),
+      themeAnimationCurve: Curves.easeInOutCubic,
       debugShowCheckedModeBanner: false,
       home: AnimatedSwitcher(
         duration: const Duration(milliseconds: 500),
@@ -78,7 +80,10 @@ class _HabitAppState extends ConsumerState<HabitApp> {
                 const SizedBox(height: 16),
                 Text('Загрузка...',
                     style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.5),
                     )),
               ],
             ),
@@ -91,4 +96,3 @@ class _HabitAppState extends ConsumerState<HabitApp> {
     }
   }
 }
-

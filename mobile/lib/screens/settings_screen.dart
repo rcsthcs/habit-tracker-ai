@@ -135,7 +135,8 @@ class SettingsScreen extends ConsumerWidget {
                   iconGradient: AppColors.accentGradient,
                   title: 'Уведомления',
                   badge: unreadCount,
-                  onTap: () => Navigator.push(context,
+                  onTap: () => Navigator.push(
+                      context,
                       MaterialPageRoute(
                           builder: (_) => const NotificationsScreen())),
                 ),
@@ -144,7 +145,8 @@ class SettingsScreen extends ConsumerWidget {
                   icon: Icons.emoji_events_outlined,
                   iconGradient: AppColors.successGradient,
                   title: 'Достижения',
-                  onTap: () => Navigator.push(context,
+                  onTap: () => Navigator.push(
+                      context,
                       MaterialPageRoute(
                           builder: (_) => const AchievementsScreen())),
                 ),
@@ -221,7 +223,8 @@ class SettingsScreen extends ConsumerWidget {
               label: Text('Выйти из аккаунта',
                   style: TextStyle(color: context.errorColor)),
               style: OutlinedButton.styleFrom(
-                side: BorderSide(color: context.errorColor.withValues(alpha: 0.5)),
+                side: BorderSide(
+                    color: context.errorColor.withValues(alpha: 0.5)),
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14)),
@@ -367,4 +370,3 @@ class _InfoTile extends StatelessWidget {
     );
   }
 }
-

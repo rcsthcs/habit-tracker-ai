@@ -164,6 +164,18 @@ async def get_detailed_analytics(
         ds = log.date.isoformat()
         log_by_date.setdefault(ds, []).append(log)
 
+    daily_breakdown: dict[str, dict[str, list[str]]] = {}
+    active_habits = [h for h in all_habits if h.is_active]
+    habit_name_by_id = {h.id: h.name for h in active_habits}
+    habit_created_date = {
+        h.id: (
+            h.created_at.date()
+            if isinstance(h.created_at, datetime)
+            else h.created_at
+        )
+        for h in active_habits
+    }
+
     for i in range(days):
         day = today - timedelta(days=i)
         ds = day.isoformat()
@@ -173,6 +185,31 @@ async def get_detailed_analytics(
         else:
             completed = all(l.completed for l in day_logs)
             heatmap[ds] = completed
+
+        day_logs_by_habit: dict[int, list[HabitLog]] = {}
+        for log in day_logs:
+            if log.habit_id in habit_name_by_id:
+                day_logs_by_habit.setdefault(log.habit_id, []).append(log)
+
+        completed_names: list[str] = []
+        missed_names: list[str] = []
+        day_active_habits = [
+            h
+            for h in active_habits
+            if habit_created_date.get(h.id) is None
+            or habit_created_date[h.id] <= day
+        ]
+        for habit in day_active_habits:
+            logs_for_habit = day_logs_by_habit.get(habit.id, [])
+            if any(l.completed for l in logs_for_habit):
+                completed_names.append(habit.name)
+            else:
+                missed_names.append(habit.name)
+
+        daily_breakdown[ds] = {
+            "completed": sorted(completed_names),
+            "missed": sorted(missed_names),
+        }
 
     # --- Category stats ---
     category_map: dict[str, dict] = {}
@@ -235,6 +272,7 @@ async def get_detailed_analytics(
         total_completed=total_completed,
         total_logged=total_logged,
         days_active=days_active,
+        daily_breakdown=daily_breakdown,
     )
 
 

@@ -45,12 +45,14 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
 
   Future<void> _toggleToday() async {
     try {
-      await ref.read(habitsProvider.notifier).toggleHabit(
-          _habit.id, !_habit.completedToday);
+      await ref
+          .read(habitsProvider.notifier)
+          .toggleHabit(_habit.id, !_habit.completedToday);
       // Reload habit data
       final api = ref.read(apiServiceProvider);
       final habits = await api.getHabits();
-      final updated = habits.firstWhere((h) => h.id == _habit.id, orElse: () => _habit);
+      final updated =
+          habits.firstWhere((h) => h.id == _habit.id, orElse: () => _habit);
       setState(() => _habit = updated);
       await _loadLogs();
     } catch (_) {}
@@ -62,7 +64,11 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(habit.name),
+        title: Text(
+          habit.name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.edit_outlined, color: AppColors.primary),
@@ -92,10 +98,19 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _loadLogs,
-              child: ListView(
-                padding: const EdgeInsets.all(16),
+          : SafeArea(
+              bottom: true,
+              child: RefreshIndicator(
+                onRefresh: _loadLogs,
+                child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  16,
+                  16,
+                  16 + MediaQuery.paddingOf(context).bottom,
+                ),
                 children: [
                   // Today toggle button
                   SizedBox(
@@ -136,6 +151,8 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
                           children: [
                             Text(
                               habit.name,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                   fontSize: 22, fontWeight: FontWeight.bold),
                             ),
@@ -146,7 +163,9 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
                                   color: context.textSecondary, fontSize: 14),
                             ),
                             const SizedBox(height: 8),
-                            Row(
+                            Wrap(
+                              spacing: 16,
+                              runSpacing: 8,
                               children: [
                                 _MiniStat(
                                   icon: Icons.local_fire_department,
@@ -154,14 +173,12 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
                                   label: 'серия',
                                   color: Colors.orange,
                                 ),
-                                const SizedBox(width: 16),
                                 _MiniStat(
                                   icon: Icons.emoji_events,
                                   value: '${habit.bestStreak}',
                                   label: 'лучшая',
                                   color: Colors.amber,
                                 ),
-                                const SizedBox(width: 16),
                                 _MiniStat(
                                   icon: Icons.pie_chart,
                                   value:
@@ -259,11 +276,17 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
                 ],
               ),
             ),
+            ),
     );
   }
 
   Widget _buildCalendarHeatmap() {
     final now = DateTime.now();
+    final createdDate = DateTime(
+      _habit.createdAt.year,
+      _habit.createdAt.month,
+      _habit.createdAt.day,
+    );
     final days = List.generate(30, (i) {
       final date = now.subtract(Duration(days: 29 - i));
       return DateTime(date.year, date.month, date.day);
@@ -271,8 +294,7 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
 
     final logDates = <String, bool>{};
     for (final log in _logs) {
-      final key =
-          '${log.date.year}-${log.date.month}-${log.date.day}';
+      final key = '${log.date.year}-${log.date.month}-${log.date.day}';
       logDates[key] = log.completed;
     }
 
@@ -281,9 +303,12 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
       runSpacing: 4,
       children: days.map((day) {
         final key = '${day.year}-${day.month}-${day.day}';
+        final existsOnThatDay = !day.isBefore(createdDate);
         final completed = logDates[key];
         Color color;
-        if (completed == true) {
+        if (!existsOnThatDay) {
+          color = Colors.transparent;
+        } else if (completed == true) {
           color = _habit.colorValue;
         } else if (completed == false) {
           color = AppColors.error.withValues(alpha: 0.3);
@@ -292,12 +317,16 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
         }
 
         return Tooltip(
-          message: '${day.day}.${day.month} — ${completed == true ? "✅" : completed == false ? "❌" : "—"}',
+          message:
+              '${day.day}.${day.month} — ${!existsOnThatDay ? "ещё не существовала" : completed == true ? "✅" : completed == false ? "❌" : "—"}',
           child: Container(
             width: 28,
             height: 28,
             decoration: BoxDecoration(
               color: color,
+              border: !existsOnThatDay
+                  ? Border.all(color: context.dividerColor, width: 0.8)
+                  : null,
               borderRadius: BorderRadius.circular(6),
             ),
             child: Center(
@@ -305,7 +334,11 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
                 '${day.day}',
                 style: TextStyle(
                   fontSize: 10,
-                  color: completed == true ? Colors.white : context.textSecondary,
+                  color: !existsOnThatDay
+                      ? context.textSecondary.withValues(alpha: 0.5)
+                      : completed == true
+                          ? Colors.white
+                          : context.textSecondary,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -356,8 +389,7 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
       borderData: FlBorderData(show: false),
       gridData: const FlGridData(show: false),
       barGroups: List.generate(7, (i) {
-        final rate =
-            dayTotals[i] > 0 ? dayCounts[i] / dayTotals[i] * 100 : 0.0;
+        final rate = dayTotals[i] > 0 ? dayCounts[i] / dayTotals[i] * 100 : 0.0;
         return BarChartGroupData(
           x: i,
           barRods: [
@@ -383,24 +415,21 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Удалить привычку?'),
-        content: Text(
-            'Привычка "${_habit.name}" и вся история будут удалены.'),
+        content: Text('Привычка "${_habit.name}" и вся история будут удалены.'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context),
               child: const Text('Отмена')),
           TextButton(
             onPressed: () async {
-              await ref
-                  .read(habitsProvider.notifier)
-                  .deleteHabit(_habit.id);
+              await ref.read(habitsProvider.notifier).deleteHabit(_habit.id);
               if (context.mounted) {
                 Navigator.pop(context); // dialog
                 Navigator.pop(context); // detail screen
               }
             },
-            child: const Text('Удалить',
-                style: TextStyle(color: AppColors.error)),
+            child:
+                const Text('Удалить', style: TextStyle(color: AppColors.error)),
           ),
         ],
       ),
@@ -464,8 +493,7 @@ class _MiniStat extends StatelessWidget {
                 fontWeight: FontWeight.bold, color: color, fontSize: 14)),
         const SizedBox(width: 2),
         Text(label,
-            style:
-                TextStyle(color: context.textSecondary, fontSize: 12)),
+            style: TextStyle(color: context.textSecondary, fontSize: 12)),
       ],
     );
   }
@@ -478,27 +506,69 @@ class _LogTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      dense: true,
-      leading: Icon(
-        log.completed ? Icons.check_circle : Icons.cancel,
-        color: log.completed ? AppColors.success : AppColors.error,
-        size: 22,
+    final isSuccess = log.completed;
+    final color = isSuccess ? AppColors.success : AppColors.error;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: context.surfaceColor,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: context.dividerColor),
       ),
-      title: Text(
-        '${log.date.day}.${log.date.month.toString().padLeft(2, '0')}.${log.date.year}',
-        style: const TextStyle(fontSize: 14),
-      ),
-      subtitle: log.note != null && log.note!.isNotEmpty
-          ? Text(log.note!, style: const TextStyle(fontSize: 12))
-          : null,
-      trailing: log.completedAt != null
-          ? Text(
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              isSuccess
+                  ? Icons.check_circle_outline_rounded
+                  : Icons.highlight_off_rounded,
+              color: color,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${log.date.day}.${log.date.month.toString().padLeft(2, '0')}.${log.date.year}',
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (log.note != null && log.note!.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    log.note!,
+                    style:
+                        TextStyle(fontSize: 13, color: context.textSecondary),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ],
+            ),
+          ),
+          if (log.completedAt != null)
+            Text(
               '${log.completedAt!.hour}:${log.completedAt!.minute.toString().padLeft(2, '0')}',
-              style:
-                  TextStyle(color: context.textSecondary, fontSize: 12),
-            )
-          : null,
+              style: TextStyle(
+                  color: context.textSecondary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -519,18 +589,24 @@ class _InfoRow extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, size: 18, color: context.textSecondary),
           const SizedBox(width: 10),
-          Text(label,
-              style: TextStyle(
-                  fontSize: 13, color: context.textSecondary)),
-          const Spacer(),
-          Flexible(
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 13, color: context.textSecondary),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
             child: Text(value,
                 textAlign: TextAlign.end,
-                style: const TextStyle(
-                    fontSize: 13, fontWeight: FontWeight.w500)),
+                softWrap: true,
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
           ),
         ],
       ),

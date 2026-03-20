@@ -22,6 +22,7 @@ class User(Base):
 
     # Relationships
     habits = relationship("Habit", back_populates="user", cascade="all, delete-orphan")
+    chat_sessions = relationship("ChatSession", back_populates="user", cascade="all, delete-orphan")
     chat_messages = relationship("ChatMessage", back_populates="user", cascade="all, delete-orphan")
     activities = relationship("UserActivity", back_populates="user", cascade="all, delete-orphan")
     achievements = relationship("Achievement", back_populates="user", cascade="all, delete-orphan")

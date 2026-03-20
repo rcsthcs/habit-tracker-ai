@@ -145,8 +145,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                   background: Container(
                     alignment: Alignment.centerRight,
                     padding: const EdgeInsets.only(right: 20),
-                    margin: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 4),
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                     decoration: BoxDecoration(
                       color: AppColors.error.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(16),
@@ -200,8 +200,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                                 ),
                                 child: Icon(
                                   _getTypeIcon(n.notification.type),
-                                  color:
-                                      _getTypeColor(n.notification.type),
+                                  color: _getTypeColor(n.notification.type),
                                   size: 22,
                                 ),
                               ),
@@ -209,8 +208,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                               // Content
                               Expanded(
                                 child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Row(
                                       children: [

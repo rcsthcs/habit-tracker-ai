@@ -109,7 +109,8 @@ class ApiService {
     return User.fromJson(response.data);
   }
 
-  Future<void> changePassword(String currentPassword, String newPassword) async {
+  Future<void> changePassword(
+      String currentPassword, String newPassword) async {
     await _dio.post('/auth/change-password', data: {
       'current_password': currentPassword,
       'new_password': newPassword,
@@ -119,7 +120,9 @@ class ApiService {
   // ─── Habits ───
 
   Future<List<Habit>> getHabits() async {
-    final response = await _dio.get('/habits/');
+    final localDate = DateTime.now().toIso8601String().split('T')[0];
+    final response =
+        await _dio.get('/habits/', queryParameters: {'local_date': localDate});
     return (response.data as List).map((j) => Habit.fromJson(j)).toList();
   }
 
@@ -158,8 +161,8 @@ class ApiService {
   }
 
   Future<List<HabitLog>> getHabitLogs(int habitId, {int days = 30}) async {
-    final response =
-        await _dio.get('/habits/$habitId/logs', queryParameters: {'days': days});
+    final response = await _dio
+        .get('/habits/$habitId/logs', queryParameters: {'days': days});
     return (response.data as List).map((j) => HabitLog.fromJson(j)).toList();
   }
 
@@ -179,26 +182,57 @@ class ApiService {
 
   // ─── Chat ───
 
-  Future<ChatMessage> sendChatMessage(String content) async {
+  Future<ChatMessage> sendChatMessage({
+    required String chatId,
+    required String content,
+    Map<String, dynamic>? contextHints,
+  }) async {
+    final payload = <String, dynamic>{
+      'content': content,
+      'session_id': chatId,
+      if (contextHints != null && contextHints.isNotEmpty)
+        'context_hints': contextHints,
+    };
     final response = await _dio.post('/chat/',
-        data: {'content': content},
-        options: Options(receiveTimeout: AppConfig.chatTimeout));
+        data: payload, options: Options(receiveTimeout: AppConfig.chatTimeout));
     return ChatMessage.fromJson(response.data);
   }
 
-  Future<List<ChatMessage>> getChatHistory({int limit = 50}) async {
-    final response =
-        await _dio.get('/chat/history', queryParameters: {'limit': limit});
-    return (response.data as List)
-        .map((j) => ChatMessage.fromJson(j))
-        .toList();
+  Future<List<ChatSession>> getChatSessions() async {
+    final response = await _dio.get('/chat/sessions');
+    return (response.data as List).map((j) => ChatSession.fromJson(j)).toList();
+  }
+
+  Future<ChatSession> createChatSession() async {
+    final response = await _dio.post('/chat/sessions');
+    return ChatSession.fromJson(response.data);
+  }
+
+  Future<List<ChatMessage>> getChatHistory({
+    required String chatId,
+    int limit = 50,
+  }) async {
+    final response = await _dio.get('/chat/history', queryParameters: {
+      'session_id': chatId,
+      'limit': limit,
+    });
+    return (response.data as List).map((j) => ChatMessage.fromJson(j)).toList();
+  }
+
+  Future<void> clearChatHistory({required String chatId}) async {
+    await _dio.delete('/chat/', queryParameters: {'session_id': chatId});
+  }
+
+  Future<void> deleteChatSession({required String chatId}) async {
+    await _dio.delete('/chat/sessions/$chatId');
   }
 
   // ─── Notifications ───
 
-  Future<List<NotificationItem>> getNotifications({bool unreadOnly = false}) async {
-    final response = await _dio.get('/notifications/',
-        queryParameters: {'unread_only': unreadOnly});
+  Future<List<NotificationItem>> getNotifications(
+      {bool unreadOnly = false}) async {
+    final response = await _dio
+        .get('/notifications/', queryParameters: {'unread_only': unreadOnly});
     return (response.data as List)
         .map((e) => NotificationItem.fromJson(e))
         .toList();
@@ -228,8 +262,8 @@ class ApiService {
   // ─── Friends ───
 
   Future<List<UserSearchResult>> searchUsers(String query) async {
-    final response = await _dio.get('/friends/search',
-        queryParameters: {'q': query});
+    final response =
+        await _dio.get('/friends/search', queryParameters: {'q': query});
     return (response.data as List)
         .map((e) => UserSearchResult.fromJson(e))
         .toList();
@@ -253,9 +287,7 @@ class ApiService {
 
   Future<List<FriendInfo>> getSentRequests() async {
     final response = await _dio.get('/friends/sent-requests');
-    return (response.data as List)
-        .map((e) => FriendInfo.fromJson(e))
-        .toList();
+    return (response.data as List).map((e) => FriendInfo.fromJson(e)).toList();
   }
 
   Future<void> removeFriend(int friendId) async {
@@ -264,16 +296,12 @@ class ApiService {
 
   Future<List<FriendInfo>> getFriends() async {
     final response = await _dio.get('/friends/');
-    return (response.data as List)
-        .map((e) => FriendInfo.fromJson(e))
-        .toList();
+    return (response.data as List).map((e) => FriendInfo.fromJson(e)).toList();
   }
 
   Future<List<FriendInfo>> getFriendRequests() async {
     final response = await _dio.get('/friends/requests');
-    return (response.data as List)
-        .map((e) => FriendInfo.fromJson(e))
-        .toList();
+    return (response.data as List).map((e) => FriendInfo.fromJson(e)).toList();
   }
 
   Future<FriendProgress> getFriendProgress(int friendId) async {
@@ -285,16 +313,14 @@ class ApiService {
 
   Future<List<Achievement>> getAchievements() async {
     final response = await _dio.get('/achievements/');
-    return (response.data as List)
-        .map((e) => Achievement.fromJson(e))
-        .toList();
+    return (response.data as List).map((e) => Achievement.fromJson(e)).toList();
   }
 
   // ─── Detailed Analytics ───
 
-  Future<DetailedAnalytics> getDetailedAnalytics({int days = 90}) async {
-    final response = await _dio.get('/analytics/detailed',
-        queryParameters: {'days': days});
+  Future<DetailedAnalytics> getDetailedAnalytics({int days = 30}) async {
+    final response =
+        await _dio.get('/analytics/detailed', queryParameters: {'days': days});
     return DetailedAnalytics.fromJson(response.data);
   }
 
@@ -311,8 +337,7 @@ class ApiService {
   }
 
   Future<List<MoodLog>> getMoodLogs({int days = 30}) async {
-    final response =
-        await _dio.get('/mood/', queryParameters: {'days': days});
+    final response = await _dio.get('/mood/', queryParameters: {'days': days});
     return (response.data as List).map((e) => MoodLog.fromJson(e)).toList();
   }
 
@@ -332,18 +357,13 @@ class ApiService {
   Future<List<Challenge>> getChallenges({String? status}) async {
     final params = <String, dynamic>{};
     if (status != null) params['status_filter'] = status;
-    final response =
-        await _dio.get('/challenges/', queryParameters: params);
-    return (response.data as List)
-        .map((e) => Challenge.fromJson(e))
-        .toList();
+    final response = await _dio.get('/challenges/', queryParameters: params);
+    return (response.data as List).map((e) => Challenge.fromJson(e)).toList();
   }
 
   Future<List<Challenge>> generateChallenges() async {
     final response = await _dio.post('/challenges/generate');
-    return (response.data as List)
-        .map((e) => Challenge.fromJson(e))
-        .toList();
+    return (response.data as List).map((e) => Challenge.fromJson(e)).toList();
   }
 
   Future<Challenge> updateChallengeProgress(int challengeId) async {
@@ -369,8 +389,8 @@ class ApiService {
   }
 
   Future<List<WeeklyReport>> getWeeklyReports({int limit = 8}) async {
-    final response = await _dio.get('/challenges/weekly-reports',
-        queryParameters: {'limit': limit});
+    final response = await _dio
+        .get('/challenges/weekly-reports', queryParameters: {'limit': limit});
     return (response.data as List)
         .map((e) => WeeklyReport.fromJson(e))
         .toList();

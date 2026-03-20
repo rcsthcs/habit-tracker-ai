@@ -58,7 +58,8 @@ class FriendProgress {
       totalHabits: json['total_habits'],
       activeHabits: json['active_habits'],
       bestStreak: json['best_streak'],
-      overallCompletionRate: (json['overall_completion_rate'] ?? 0.0).toDouble(),
+      overallCompletionRate:
+          (json['overall_completion_rate'] ?? 0.0).toDouble(),
       todayCompleted: json['today_completed'],
       todayTotal: json['today_total'],
     );
@@ -90,4 +91,3 @@ class UserSearchResult {
     );
   }
 }
-

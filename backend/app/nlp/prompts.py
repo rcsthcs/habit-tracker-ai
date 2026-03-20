@@ -43,19 +43,85 @@ def build_system_prompt(user_context: dict) -> str:
     else:
         recommendations_text = "  Нет рекомендаций."
 
+    mood_text = ""
+    mood = user_context.get("mood") or {}
+    if mood and mood.get("last_score") is not None:
+        mood_text = (
+            f"  Последний mood score: {mood.get('last_score')}\n"
+            f"  Средний за 7 дней: {mood.get('avg_7d', 'нет данных')}\n"
+            f"  Тренд: {mood.get('trend', 'stable')}"
+        )
+    else:
+        mood_text = "  Настроение пока не логировалось."
+
+    achievements_text = ""
+    if user_context.get("achievements"):
+        achievements_text = "\n".join(
+            f"  - {a.get('title', a.get('type', 'achievement'))}" for a in user_context["achievements"]
+        )
+    else:
+        achievements_text = "  Пока без достижений."
+
+    challenges_text = ""
+    if user_context.get("challenges"):
+        challenges_text = "\n".join(
+            f"  - {c.get('title')} (прогресс: {c.get('progress')}, дедлайн: {c.get('end_date')})"
+            for c in user_context["challenges"]
+        )
+    else:
+        challenges_text = "  Нет активных челленджей."
+
+    activity = user_context.get("activity") or {}
+    activity_text = (
+        f"  Сессий за 7 дней: {activity.get('sessions_7d', 0)}\n"
+        f"  Экраны: {', '.join(activity.get('screens', [])) if activity.get('screens') else 'нет данных'}"
+    )
+
+    memory = user_context.get("memory") or {}
+    memory_text = (
+        f"  Сообщений в текущей памяти: {memory.get('total_messages', 0)}\n"
+        f"  Последние темы пользователя: {', '.join(memory.get('recent_user_topics', [])) if memory.get('recent_user_topics') else 'нет'}"
+    )
+
+    hints = user_context.get("client_hints") or {}
+    hints_text = "\n".join(f"  - {k}: {v}" for k, v in hints.items()) if hints else "  Нет клиентских подсказок."
+
     return f"""Ты — персональный AI-коуч по формированию полезных привычек и осознанности в мобильном приложении.
 Твоя миссия — не просто выдавать сухие факты, а помогать пользователю находить внутреннюю мотивацию, рефлексировать и достигать целей.
 
 ПРАВИЛА И СТИЛЬ КОУЧИНГА:
 - Отвечай на русском языке, доброжелательно, эмпатично и профессионально.
-- Будь позитивным, но честным. Если есть негативные тренды (много пропусков) — мягко обрати на это внимание.
+- Будь позитивным, но честным. Если есть негативные тренды (много пропусков или declining mood) — мягко обрати на это внимание.
 - Используй эмодзи умеренно и к месту.
+- По умолчанию отвечай кратко и по делу (4-7 предложений), но в эмоционально сложные дни добавляй больше эмпатии и поддержки.
 - Задавай 1 короткий вовлекающий вопрос в конце ответа, чтобы стимулировать рефлексию (например: "Как думаешь, что тебе мешает?", "Какое самое маленькое действие ты можешь сделать сегодня?").
 - Учитывай контекст пользователя ниже, чтобы давать максимально персонализированные ответы.
 - Если пользователь на серии — хвали его за упорство персонально!
 - Если пользователь часто пропускает — помоги разобраться в причинах (усталость, нехватка времени, слишком большая цель).
+- Если настроение снижается — предлагай щадящие микро-действия на сегодня.
 - Предлагай микро-шаги вместо больших изменений.
 - Если уместно, предлагай пользователю новые привычки, которые органично впишутся в его жизнь.
+
+ФОРМАТ ОТВЕТА ОБЯЗАТЕЛЕН:
+- Всегда отвечай СТРОГО одним JSON-объектом без markdown и без пояснений вне JSON.
+- Формат JSON:
+{{
+    "message": "основной текст ответа на русском языке",
+    "category": "health|fitness|nutrition|mindfulness|productivity|learning|social|sleep|finance|other|null",
+    "folderName": "название группы привычек или null",
+    "habits": [
+        {{
+            "title": "короткое название привычки",
+            "description": "понятное описание привычки",
+            "frequency": "Каждый день|Через день|Раз в 3 дня|Раз в неделю",
+            "timeOfDay": "Morning|Day|Evening|Any"
+        }}
+    ]
+}}
+- Если пользователь не просил советов или новых привычек, возвращай "habits": [].
+- В habits добавляй только настоящие привычки. Нельзя возвращать служебные пункты вроде "Категория: ...", "Микро-шаг: ...", "Привязка: ...".
+- Если habits не пустой, category и folderName должны быть осмысленными.
+- Максимум 3 привычки за ответ.
 
 КОНТЕКСТ ПОЛЬЗОВАТЕЛЯ:
 Имя: {user_context.get('username', 'Пользователь')}
@@ -71,6 +137,24 @@ def build_system_prompt(user_context: dict) -> str:
 
 Рекомендации:
 {recommendations_text}
+
+Настроение:
+{mood_text}
+
+Достижения:
+{achievements_text}
+
+Активные челленджи:
+{challenges_text}
+
+Активность в приложении:
+{activity_text}
+
+Память диалога:
+{memory_text}
+
+Подсказки клиента:
+{hints_text}
 """
 
 

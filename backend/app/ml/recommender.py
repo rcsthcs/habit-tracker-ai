@@ -77,16 +77,27 @@ class HabitRecommender:
             select(Habit).where(Habit.user_id == user_id, Habit.is_active == True)
         )
         user_habits = result.scalars().all()
-        if not user_habits:
-            return [{
-                "type": "new_habit",
-                "title": "Начни с малого!",
-                "description": "Попробуй добавить одну простую привычку, например 'Пить воду' или 'Утренняя зарядка'",
-                "reason": "Маленькие привычки легче закрепить",
-            }]
-
         user_categories = {h.category for h in user_habits}
         user_habit_names = {h.name.lower() for h in user_habits}
+        
+        if not user_habits:
+            return [
+                {
+                    "type": "new_habit",
+                    "title": "Пить воду утром",
+                    "description": "Стакан воды после пробуждения",
+                    "reason": "Запускает метаболизм",
+                    "category": "health"
+                },
+                {
+                    "type": "new_habit",
+                    "title": "Утренняя зарядка",
+                    "description": "5 минут разминки",
+                    "reason": "Маленькие привычки легче закрепить",
+                    "category": "fitness"
+                }
+            ]
+
         recommendations = []
 
         for category in user_categories:
@@ -110,6 +121,16 @@ class HabitRecommender:
             if rec["title"] not in seen:
                 seen.add(rec["title"])
                 unique.append(rec)
+
+        if not unique:
+            fallback = [
+                {"type": "new_habit", "title": "Пить воду", "description": "Полезно", "reason": "Основа здоровья", "category": "health"},
+                {"type": "new_habit", "title": "Чтение", "description": "20 минут в день", "reason": "Расширяет кругозор", "category": "learning"},
+                {"type": "new_habit", "title": "Вечерняя прогулка", "description": "30 минут", "reason": "Улучшает сон", "category": "fitness"}
+            ]
+            for rec in fallback:
+                if rec["title"].lower() not in user_habit_names:
+                    unique.append(rec)
 
         return unique[:5]  # Top 5 recommendations
 

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../core/app_colors.dart';
 import '../core/theme_extensions.dart';
 import '../models/friendship.dart';
@@ -43,7 +44,10 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
   void _onSearchChanged(String query) {
     _searchDebounce?.cancel();
     if (query.length < 2) {
-      setState(() { _searchResults = []; _searching = false; });
+      setState(() {
+        _searchResults = [];
+        _searching = false;
+      });
       return;
     }
     setState(() => _searching = true);
@@ -106,14 +110,17 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.people_outline, size: 64,
+                  Icon(Icons.people_outline,
+                      size: 64,
                       color: context.textSecondary.withValues(alpha: 0.5)),
                   const SizedBox(height: 16),
                   Text('Пока нет друзей',
-                      style: TextStyle(fontSize: 16, color: context.textSecondary)),
+                      style: TextStyle(
+                          fontSize: 16, color: context.textSecondary)),
                   const SizedBox(height: 8),
                   Text('Найди друзей во вкладке «Поиск»',
-                      style: TextStyle(color: context.textSecondary, fontSize: 13)),
+                      style: TextStyle(
+                          color: context.textSecondary, fontSize: 13)),
                 ],
               ),
             );
@@ -130,16 +137,19 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                     title: const Text('Удалить из друзей?'),
                     content: Text('Удалить ${friends[i].username}?'),
                     actions: [
-                      TextButton(onPressed: () => Navigator.pop(context, false),
+                      TextButton(
+                          onPressed: () => Navigator.pop(context, false),
                           child: const Text('Отмена')),
-                      TextButton(onPressed: () => Navigator.pop(context, true),
+                      TextButton(
+                          onPressed: () => Navigator.pop(context, true),
                           child: const Text('Удалить',
                               style: TextStyle(color: AppColors.error))),
                     ],
                   ),
                 );
                 if (confirm == true) {
-                  await ref.read(friendsProvider.notifier)
+                  await ref
+                      .read(friendsProvider.notifier)
                       .removeFriend(friends[i].userId);
                 }
               },
@@ -151,7 +161,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                   ),
                 );
               },
-            ),
+            ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.2, end: 0),
           );
         },
       ),
@@ -169,8 +179,18 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
         data: (requests) {
           if (requests.isEmpty) {
             return Center(
-              child: Text('Нет входящих запросов',
-                  style: TextStyle(color: context.textSecondary)),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.inbox_outlined,
+                      size: 64,
+                      color: context.textSecondary.withValues(alpha: 0.5)),
+                  const SizedBox(height: 16),
+                  Text('Нет входящих запросов',
+                      style: TextStyle(
+                          fontSize: 16, color: context.textSecondary)),
+                ],
+              ),
             );
           }
           return ListView.builder(
@@ -179,40 +199,68 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
             itemBuilder: (ctx, i) {
               final req = requests[i];
               return Card(
-                child: ListTile(
-                  leading: UserAvatar(
-                    avatarUrl: req.avatarUrl,
-                    name: req.username,
-                    radius: 20,
-                  ),
-                  title: Text(req.username,
-                      style: const TextStyle(fontWeight: FontWeight.w600)),
-                  subtitle: const Text('Хочет добавить тебя в друзья'),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: BorderSide(color: context.dividerColor),
+                ),
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Row(
                     children: [
-                      IconButton(
-                        icon: const Icon(Icons.check_circle,
-                            color: AppColors.success),
-                        onPressed: () async {
-                          await ref.read(friendsProvider.notifier)
-                              .acceptRequest(req.friendshipId);
-                          ref.invalidate(friendRequestsProvider);
-                        },
+                      UserAvatar(
+                        avatarUrl: req.avatarUrl,
+                        name: req.username,
+                        radius: 24,
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.cancel,
-                            color: AppColors.error),
-                        onPressed: () async {
-                          await ref.read(friendsProvider.notifier)
-                              .rejectRequest(req.friendshipId);
-                          ref.invalidate(friendRequestsProvider);
-                        },
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(req.username,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w600)),
+                            const SizedBox(height: 2),
+                            Text('Хочет добавить тебя в друзья',
+                                style: TextStyle(
+                                    fontSize: 13,
+                                    color: context.textSecondary)),
+                          ],
+                        ),
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.check_circle,
+                                color: AppColors.success),
+                            onPressed: () async {
+                              await ref
+                                  .read(friendsProvider.notifier)
+                                  .acceptRequest(req.friendshipId);
+                              ref.invalidate(friendRequestsProvider);
+                            },
+                            tooltip: 'Принять',
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.cancel,
+                                color: AppColors.error),
+                            onPressed: () async {
+                              await ref
+                                  .read(friendsProvider.notifier)
+                                  .rejectRequest(req.friendshipId);
+                              ref.invalidate(friendRequestsProvider);
+                            },
+                            tooltip: 'Отклонить',
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
-              );
+              ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.2, end: 0);
             },
           );
         },
@@ -231,8 +279,18 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
         data: (requests) {
           if (requests.isEmpty) {
             return Center(
-              child: Text('Нет исходящих запросов',
-                  style: TextStyle(color: context.textSecondary)),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.outbox_outlined,
+                      size: 64,
+                      color: context.textSecondary.withValues(alpha: 0.5)),
+                  const SizedBox(height: 16),
+                  Text('Нет исходящих запросов',
+                      style: TextStyle(
+                          fontSize: 16, color: context.textSecondary)),
+                ],
+              ),
             );
           }
           return ListView.builder(
@@ -241,41 +299,70 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
             itemBuilder: (ctx, i) {
               final req = requests[i];
               return Card(
-                child: ListTile(
-                  leading: UserAvatar(
-                    avatarUrl: req.avatarUrl,
-                    name: req.username,
-                    radius: 20,
-                  ),
-                  title: Text(req.username,
-                      style: const TextStyle(fontWeight: FontWeight.w600)),
-                  subtitle: const Text('Ожидает подтверждения',
-                      style: TextStyle(color: AppColors.warning, fontSize: 12)),
-                  trailing: TextButton.icon(
-                    onPressed: () async {
-                      try {
-                        await ref.read(friendsProvider.notifier)
-                            .cancelRequest(req.friendshipId);
-                        ref.invalidate(sentRequestsProvider);
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Запрос отозван')),
-                          );
-                        }
-                      } catch (e) {
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Ошибка: $e')),
-                          );
-                        }
-                      }
-                    },
-                    icon: const Icon(Icons.close, size: 16, color: AppColors.error),
-                    label: const Text('Отозвать',
-                        style: TextStyle(fontSize: 12, color: AppColors.error)),
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: BorderSide(color: context.dividerColor),
+                ),
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Row(
+                    children: [
+                      UserAvatar(
+                        avatarUrl: req.avatarUrl,
+                        name: req.username,
+                        radius: 24,
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(req.username,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w600)),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Ожидает подтверждения',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: context.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      TextButton.icon(
+                        onPressed: () async {
+                          try {
+                            await ref
+                                .read(friendsProvider.notifier)
+                                .cancelRequest(req.friendshipId);
+                            ref.invalidate(sentRequestsProvider);
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Запрос отозван')),
+                              );
+                            }
+                          } catch (e) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Ошибка: $e')),
+                              );
+                            }
+                          }
+                        },
+                        icon: const Icon(Icons.close,
+                            size: 18, color: AppColors.error),
+                        label: const Text('Отозвать',
+                            style: TextStyle(
+                                fontSize: 13, color: AppColors.error)),
+                      ),
+                    ],
                   ),
                 ),
-              );
+              ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.2, end: 0);
             },
           );
         },
@@ -319,17 +406,37 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                   itemBuilder: (ctx, i) {
                     final user = _searchResults[i];
                     return Card(
-                      child: ListTile(
-                        leading: UserAvatar(
-                          avatarUrl: user.avatarUrl,
-                          name: user.username,
-                          radius: 20,
-                        ),
-                        title: Text(user.username,
-                            style: const TextStyle(fontWeight: FontWeight.w600)),
-                        trailing: _buildFriendshipAction(user),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        side: BorderSide(color: context.dividerColor),
                       ),
-                    );
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
+                        child: Row(
+                          children: [
+                            UserAvatar(
+                              avatarUrl: user.avatarUrl,
+                              name: user.username,
+                              radius: 24,
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Text(
+                                user.username,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                            _buildFriendshipAction(user),
+                          ],
+                        ),
+                      ),
+                    )
+                        .animate()
+                        .fadeIn(duration: 300.ms)
+                        .slideY(begin: 0.2, end: 0);
                   },
                 ),
         ),
@@ -349,7 +456,8 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
         onPressed: user.friendshipId != null
             ? () async {
                 try {
-                  await ref.read(friendsProvider.notifier)
+                  await ref
+                      .read(friendsProvider.notifier)
                       .cancelRequest(user.friendshipId!);
                   _search(_searchController.text);
                   ref.invalidate(sentRequestsProvider);
@@ -411,6 +519,11 @@ class _FriendCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: context.dividerColor),
+      ),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
@@ -428,29 +541,32 @@ class _FriendCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(friend.username,
-                        style: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w600)),
+                    Text(
+                      friend.username,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(Icons.person, size: 14,
-                            color: context.textSecondary.withValues(alpha: 0.6)),
-                        const SizedBox(width: 4),
-                        Text('Нажми для просмотра профиля',
-                            style: TextStyle(
-                                fontSize: 12, color: context.textSecondary)),
-                      ],
+                    Text(
+                      'Нажми для просмотра профиля',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: context.textSecondary,
+                      ),
                     ),
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right, color: context.textSecondary),
-              const SizedBox(width: 4),
               IconButton(
-                icon: Icon(Icons.person_remove,
-                    color: context.textSecondary, size: 20),
+                icon: Icon(
+                  Icons.person_remove_outlined,
+                  color: context.textSecondary,
+                  size: 22,
+                ),
                 onPressed: onRemove,
+                tooltip: 'Удалить из друзей',
               ),
             ],
           ),
@@ -469,8 +585,7 @@ class _FriendProgressDialog extends ConsumerStatefulWidget {
       _FriendProgressDialogState();
 }
 
-class _FriendProgressDialogState
-    extends ConsumerState<_FriendProgressDialog> {
+class _FriendProgressDialogState extends ConsumerState<_FriendProgressDialog> {
   FriendProgress? _progress;
   bool _loading = true;
 
@@ -499,25 +614,30 @@ class _FriendProgressDialogState
       title: Text(_progress?.username ?? 'Прогресс друга'),
       content: _loading
           ? const SizedBox(
-              height: 100,
-              child: Center(child: CircularProgressIndicator()))
+              height: 100, child: Center(child: CircularProgressIndicator()))
           : _progress == null
               ? const Text('Не удалось загрузить')
               : Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     _ProgressRow(
-                        icon: Icons.checklist, label: 'Привычки',
+                        icon: Icons.checklist,
+                        label: 'Привычки',
                         value: '${_progress!.activeHabits} активных'),
                     _ProgressRow(
-                        icon: Icons.local_fire_department, label: 'Лучшая серия',
+                        icon: Icons.local_fire_department,
+                        label: 'Лучшая серия',
                         value: '${_progress!.bestStreak} дн.'),
                     _ProgressRow(
-                        icon: Icons.pie_chart, label: 'Выполнение',
-                        value: '${_progress!.overallCompletionRate.toStringAsFixed(0)}%'),
+                        icon: Icons.pie_chart,
+                        label: 'Выполнение',
+                        value:
+                            '${_progress!.overallCompletionRate.toStringAsFixed(0)}%'),
                     _ProgressRow(
-                        icon: Icons.today, label: 'Сегодня',
-                        value: '${_progress!.todayCompleted}/${_progress!.todayTotal}'),
+                        icon: Icons.today,
+                        label: 'Сегодня',
+                        value:
+                            '${_progress!.todayCompleted}/${_progress!.todayTotal}'),
                   ],
                 ),
       actions: [
@@ -549,14 +669,12 @@ class _ProgressRow extends StatelessWidget {
         children: [
           Icon(icon, size: 20, color: AppColors.primary),
           const SizedBox(width: 12),
-          Expanded(child: Text(label,
-              style: TextStyle(color: context.textSecondary))),
+          Expanded(
+              child:
+                  Text(label, style: TextStyle(color: context.textSecondary))),
           Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
         ],
       ),
     );
   }
 }
-
-
-

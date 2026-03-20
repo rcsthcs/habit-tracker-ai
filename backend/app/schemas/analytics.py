@@ -4,13 +4,43 @@ from datetime import datetime
 
 class ChatMessageCreate(BaseModel):
     content: str
+    session_id: str
+    context_hints: dict | None = None
+
+
+class ChatSessionResponse(BaseModel):
+    id: str
+    title: str
+    created_at: datetime
+    updated_at: datetime
+    message_count: int = 0
+    preview: str | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class ChatHabitSuggestion(BaseModel):
+    title: str
+    description: str = ""
+    category: str = "other"
+    frequency: str = "Каждый день"
+    time_of_day: str | None = None
+    reason: str | None = None
+    cooldown_days: int = 1
+    daily_target: int = 1
+    target_time: str | None = None
+    reminder_time: str | None = None
+    group_name: str | None = None
 
 
 class ChatMessageResponse(BaseModel):
     id: int
+    session_id: str
     role: str
     content: str
     timestamp: datetime
+    suggested_habits: list[ChatHabitSuggestion] = []
+    suggested_bundle_name: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -47,6 +77,11 @@ class HourStat(BaseModel):
     count: int
 
 
+class DayHabitBreakdown(BaseModel):
+    completed: list[str]
+    missed: list[str]
+
+
 class DetailedAnalyticsResponse(BaseModel):
     """Расширенная аналитика с heatmap, категориями, часами и трендами."""
     # Месячный heatmap: {date_str: bool}
@@ -61,6 +96,8 @@ class DetailedAnalyticsResponse(BaseModel):
     total_completed: int
     total_logged: int
     days_active: int
+    # Детализация по дням
+    daily_breakdown: dict[str, DayHabitBreakdown] = {}
 
 
 class NotificationResponse(BaseModel):

@@ -245,9 +245,7 @@ class _MoodScreenState extends ConsumerState<MoodScreen>
                       ),
                 ),
                 const SizedBox(height: 12),
-                _buildWeeklyChart(last7)
-                    .animate()
-                    .fadeIn(duration: 400.ms),
+                _buildWeeklyChart(last7).animate().fadeIn(duration: 400.ms),
                 const SizedBox(height: 24),
               ],
 
@@ -415,8 +413,8 @@ class _MoodScreenState extends ConsumerState<MoodScreen>
       ),
       child: Text(
         text,
-        style: TextStyle(
-            fontSize: 11, color: color, fontWeight: FontWeight.w600),
+        style:
+            TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600),
       ),
     );
   }
@@ -554,8 +552,7 @@ class _MoodScreenState extends ConsumerState<MoodScreen>
             Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
             const Spacer(),
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
                 color: activeColor.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(8),
@@ -578,8 +575,7 @@ class _MoodScreenState extends ConsumerState<MoodScreen>
             thumbColor: activeColor,
             overlayColor: activeColor.withValues(alpha: 0.1),
             trackHeight: 6,
-            thumbShape:
-                const RoundSliderThumbShape(enabledThumbRadius: 8),
+            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
           ),
           child: Slider(
             value: value,
@@ -633,8 +629,8 @@ class _MoodScreenState extends ConsumerState<MoodScreen>
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.transparent,
             shadowColor: Colors.transparent,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
           child: _saving
               ? const SizedBox(
@@ -699,6 +695,32 @@ class _MoodScreenState extends ConsumerState<MoodScreen>
             ),
           ],
         ).animate().fadeIn(duration: 400.ms, delay: 500.ms),
+        if ((data.aiInsight ?? '').trim().isNotEmpty) ...[
+          const SizedBox(height: 16),
+          GlassCard(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.auto_awesome_rounded,
+                  size: 18,
+                  color: AppColors.primary,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    data.aiInsight!.trim(),
+                    style: TextStyle(
+                      color: context.textPrimary,
+                      height: 1.35,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ).animate().fadeIn(duration: 400.ms, delay: 580.ms),
+        ],
         const SizedBox(height: 20),
         if (data.correlations.isNotEmpty) ...[
           Text(
@@ -791,8 +813,7 @@ class _MoodScreenState extends ConsumerState<MoodScreen>
               ),
             ),
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),

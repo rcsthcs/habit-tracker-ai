@@ -57,9 +57,9 @@ async def _is_completed_today(db: AsyncSession, habit_id: int) -> bool:
     return result.scalar_one_or_none() is not None
 
 
-async def _today_completions(db: AsyncSession, habit_id: int) -> int:
+async def _today_completions(db: AsyncSession, habit_id: int, local_date: date = None) -> int:
     """Count how many completed logs exist for today."""
-    today = date.today()
+    today = local_date if local_date else date.today()
     result = await db.execute(
         select(HabitLog).where(
             HabitLog.habit_id == habit_id,
@@ -147,9 +147,15 @@ async def create_habit(
 
 @router.get("/", response_model=list[HabitResponse])
 async def get_habits(
+    local_date: str = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    try:
+        user_date = datetime.strptime(local_date, "%Y-%m-%d").date() if local_date else date.today()
+    except Exception:
+        user_date = date.today()
+
     result = await db.execute(
         select(Habit).where(Habit.user_id == current_user.id, Habit.is_active == True)
     )
@@ -160,7 +166,7 @@ async def get_habits(
         resp = HabitResponse.model_validate(habit)
         resp.current_streak = await _compute_streak(db, habit.id, habit.cooldown_days)
         resp.best_streak = await _compute_best_streak(db, habit.id, habit.cooldown_days)
-        completions = await _today_completions(db, habit.id)
+        completions = await _today_completions(db, habit.id, user_date)
         resp.today_completions = completions
         resp.completed_today = completions >= habit.daily_target
         resp.completion_rate = await _completion_rate(db, habit.id)
@@ -257,7 +263,7 @@ async def log_habit(
 
     # For multi-completion habits (daily_target > 1), always create new log if not at target
     if habit.daily_target > 1 and log_data.completed:
-        completions = await _today_completions(db, habit.id)
+        completions = await _today_completions(db, habit.id, log_data.date)
         if completions >= habit.daily_target:
             raise HTTPException(status_code=400, detail="Daily target already reached")
         log = HabitLog(

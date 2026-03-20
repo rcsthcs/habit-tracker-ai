@@ -32,6 +32,24 @@ class HourStat {
   }
 }
 
+class DayHabitBreakdown {
+  final List<String> completed;
+  final List<String> missed;
+
+  DayHabitBreakdown({
+    required this.completed,
+    required this.missed,
+  });
+
+  factory DayHabitBreakdown.fromJson(Map<String, dynamic> json) {
+    return DayHabitBreakdown(
+      completed:
+          (json['completed'] as List? ?? []).map((e) => e.toString()).toList(),
+      missed: (json['missed'] as List? ?? []).map((e) => e.toString()).toList(),
+    );
+  }
+}
+
 class DetailedAnalytics {
   final Map<String, bool?> heatmap;
   final List<CategoryStat> categoryStats;
@@ -40,6 +58,7 @@ class DetailedAnalytics {
   final int totalCompleted;
   final int totalLogged;
   final int daysActive;
+  final Map<String, DayHabitBreakdown> dailyBreakdown;
 
   DetailedAnalytics({
     required this.heatmap,
@@ -49,12 +68,22 @@ class DetailedAnalytics {
     required this.totalCompleted,
     required this.totalLogged,
     required this.daysActive,
+    required this.dailyBreakdown,
   });
 
   factory DetailedAnalytics.fromJson(Map<String, dynamic> json) {
     final heatmapRaw = json['heatmap'] as Map<String, dynamic>? ?? {};
-    final heatmap = heatmapRaw.map((key, value) =>
-        MapEntry(key, value as bool?));
+    final heatmap =
+        heatmapRaw.map((key, value) => MapEntry(key, value as bool?));
+
+    final dailyBreakdownRaw =
+        json['daily_breakdown'] as Map<String, dynamic>? ?? {};
+    final dailyBreakdown = dailyBreakdownRaw.map(
+      (key, value) => MapEntry(
+        key,
+        DayHabitBreakdown.fromJson(value as Map<String, dynamic>),
+      ),
+    );
 
     return DetailedAnalytics(
       heatmap: heatmap,
@@ -70,7 +99,7 @@ class DetailedAnalytics {
       totalCompleted: json['total_completed'] ?? 0,
       totalLogged: json['total_logged'] ?? 0,
       daysActive: json['days_active'] ?? 0,
+      dailyBreakdown: dailyBreakdown,
     );
   }
 }
-

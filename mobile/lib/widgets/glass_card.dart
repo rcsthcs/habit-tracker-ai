@@ -1,15 +1,15 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../core/app_colors.dart';
 import '../core/app_spacing.dart';
 
-/// A glassmorphism card with backdrop blur, translucent background,
-/// and subtle gradient border.
+/// A surface card with solid background, subtle border and shadow.
+/// Previously used glassmorphism (BackdropFilter) — removed for GPU performance.
 class GlassCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
   final EdgeInsetsGeometry? margin;
   final double borderRadius;
+  // [blur] kept for API compatibility but is no longer used.
   final double? blur;
   final VoidCallback? onTap;
   final LinearGradient? gradient;
@@ -28,37 +28,27 @@ class GlassCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final glassColor = isDark ? AppColors.glassDark : AppColors.glassLight;
+    final surfaceColor =
+        isDark ? AppColors.darkSurfaceVariant : Colors.white;
     final borderColor =
-        isDark ? AppColors.glassBorderDark : AppColors.glassBorderLight;
-    final effectiveBlur = blur ?? AppColors.glassBlurSigma;
+        isDark ? AppColors.darkDivider : AppColors.lightDivider;
 
-    Widget card = ClipRRect(
-      borderRadius: BorderRadius.circular(borderRadius),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(
-          sigmaX: effectiveBlur,
-          sigmaY: effectiveBlur,
-        ),
-        child: Container(
-          decoration: BoxDecoration(
-            color: glassColor,
-            gradient: gradient,
-            borderRadius: BorderRadius.circular(borderRadius),
-            border: Border.all(color: borderColor, width: 1),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.06),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
-              ),
-            ],
+    Widget card = Container(
+      decoration: BoxDecoration(
+        color: gradient != null ? null : surfaceColor,
+        gradient: gradient,
+        borderRadius: BorderRadius.circular(borderRadius),
+        border: Border.all(color: borderColor, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
-          padding: padding ??
-              const EdgeInsets.all(AppSpacing.cardPadding),
-          child: child,
-        ),
+        ],
       ),
+      padding: padding ?? const EdgeInsets.all(AppSpacing.cardPadding),
+      child: child,
     );
 
     if (onTap != null) {

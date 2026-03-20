@@ -6,7 +6,6 @@ import '../core/theme_extensions.dart';
 import '../providers/app_providers.dart';
 import '../widgets/user_avatar.dart';
 import '../widgets/avatar_editor.dart';
-import '../widgets/glass_card.dart';
 import '../widgets/gradient_button.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -116,8 +115,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 validator: (v) {
                   if (v == null || v.isEmpty) return 'Введите новый пароль';
                   if (v.length < 8) return 'Минимум 8 символов';
-                  if (!RegExp(r'[A-Z]').hasMatch(v)) return 'Нужна заглавная буква';
-                  if (!RegExp(r'[a-z]').hasMatch(v)) return 'Нужна строчная буква';
+                  if (!RegExp(r'[A-Z]').hasMatch(v))
+                    return 'Нужна заглавная буква';
+                  if (!RegExp(r'[a-z]').hasMatch(v))
+                    return 'Нужна строчная буква';
                   if (!RegExp(r'\d').hasMatch(v)) return 'Нужна цифра';
                   return null;
                 },
@@ -284,8 +285,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       decoration: BoxDecoration(
                         gradient: AppColors.primaryGradient,
                         shape: BoxShape.circle,
-                        border: Border.all(
-                            color: context.surfaceColor, width: 3),
+                        border:
+                            Border.all(color: context.surfaceColor, width: 3),
                         boxShadow: [
                           BoxShadow(
                             color: AppColors.primary.withValues(alpha: 0.3),
@@ -321,22 +322,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 border: Border.all(
                     color: context.errorColor.withValues(alpha: 0.3)),
               ),
-              child: Text(_error!,
-                  style: TextStyle(color: context.errorColor)),
+              child: Text(_error!, style: TextStyle(color: context.errorColor)),
             ),
 
           // Username
-          GlassCard(
+          Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: context.dividerColor),
+            ),
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: TextField(
                 controller: _usernameController,
                 decoration: const InputDecoration(
                   labelText: 'Имя пользователя',
-                  prefixIcon: Icon(Icons.person_outline),
                   border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
                 ),
               ),
             ),
@@ -344,46 +346,58 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           const SizedBox(height: 12),
 
           // Email
-          GlassCard(
+          Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: context.dividerColor),
+            ),
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: TextField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
                 decoration: const InputDecoration(
                   labelText: 'Email',
-                  prefixIcon: Icon(Icons.email_outlined),
                   border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
                 ),
               ),
             ),
           ),
           const SizedBox(height: 24),
 
-          // Save button
-          if (_hasChanges)
-            GradientButton(
-              onPressed: _saving ? null : _save,
-              gradient: AppColors.primaryGradient,
-              child: const Text('Сохранить изменения',
-                  style: TextStyle(
-                      fontWeight: FontWeight.w600, color: Colors.white)),
-            ).animate().fadeIn(),
-          const SizedBox(height: 16),
-
-          // Change password
-          OutlinedButton.icon(
-            onPressed: _showChangePasswordDialog,
-            icon: const Icon(Icons.lock_reset),
-            label: const Text('Сменить пароль'),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size(double.infinity, 50),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14)),
-              side: BorderSide(color: context.dividerColor),
-            ),
+          // Change password & Logout
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _showChangePasswordDialog,
+                  icon: const Icon(Icons.lock_reset),
+                  label: const Text('Пароль'),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(0, 50),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                    side: BorderSide(color: context.dividerColor),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => ref.read(authProvider.notifier).logout(),
+                  icon: const Icon(Icons.logout, color: AppColors.error),
+                  label: const Text('Выйти',
+                      style: TextStyle(color: AppColors.error)),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(0, 50),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                    side: BorderSide(color: context.dividerColor),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

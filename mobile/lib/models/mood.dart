@@ -86,6 +86,7 @@ class MoodAnalytics {
   final String moodTrend;
   final String? bestDay;
   final String? worstDay;
+  final String? aiInsight;
   final List<MoodHabitCorrelation> correlations;
   final List<MoodLog> moodHistory;
 
@@ -95,6 +96,7 @@ class MoodAnalytics {
     required this.moodTrend,
     this.bestDay,
     this.worstDay,
+    this.aiInsight,
     required this.correlations,
     required this.moodHistory,
   });
@@ -110,6 +112,7 @@ class MoodAnalytics {
       moodTrend: json['mood_trend'],
       bestDay: json['best_day'],
       worstDay: json['worst_day'],
+      aiInsight: json['ai_insight']?.toString(),
       correlations: (json['correlations'] as List)
           .map((e) => MoodHabitCorrelation.fromJson(e))
           .toList(),

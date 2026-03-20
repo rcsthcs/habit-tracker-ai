@@ -67,7 +67,10 @@ class AiTipCard extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           gradient: LinearGradient(
-            colors: [tipColor.withValues(alpha: 0.08), tipColor.withValues(alpha: 0.02)],
+            colors: [
+              tipColor.withValues(alpha: 0.08),
+              tipColor.withValues(alpha: 0.02)
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -107,4 +110,3 @@ class AiTipCard extends StatelessWidget {
     );
   }
 }
-

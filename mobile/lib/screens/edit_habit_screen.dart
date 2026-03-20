@@ -67,10 +67,9 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
     return null;
   }
 
-  String? _formatTime(TimeOfDay? t) =>
-      t != null
-          ? '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}'
-          : null;
+  String? _formatTime(TimeOfDay? t) => t != null
+      ? '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}'
+      : null;
 
   @override
   void dispose() {
@@ -124,8 +123,7 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
                   )
                 : const Text('Сохранить',
                     style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.primary)),
+                        fontWeight: FontWeight.w600, color: AppColors.primary)),
           ),
         ],
       ),
@@ -167,8 +165,7 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
                 label: Text(e.value, style: const TextStyle(fontSize: 12)),
                 selected: isSelected,
                 selectedColor: AppColors.primary.withValues(alpha: 0.2),
-                onSelected: (_) =>
-                    setState(() => _selectedCategory = e.key),
+                onSelected: (_) => setState(() => _selectedCategory = e.key),
               );
             }).toList(),
           ),
@@ -187,8 +184,7 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
                 label: Text(e.value, style: const TextStyle(fontSize: 12)),
                 selected: isSelected,
                 selectedColor: AppColors.primary.withValues(alpha: 0.2),
-                onSelected: (_) =>
-                    setState(() => _cooldownDays = e.key),
+                onSelected: (_) => setState(() => _cooldownDays = e.key),
               );
             }).toList(),
           ),
@@ -246,8 +242,8 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
                   onPressed: () async {
                     final time = await showTimePicker(
                       context: context,
-                      initialTime: _reminderTime ??
-                          const TimeOfDay(hour: 8, minute: 30),
+                      initialTime:
+                          _reminderTime ?? const TimeOfDay(hour: 8, minute: 30),
                     );
                     if (time != null) {
                       setState(() => _reminderTime = time);
@@ -285,4 +281,3 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
     );
   }
 }
-

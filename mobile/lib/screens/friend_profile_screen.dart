@@ -99,8 +99,7 @@ class _FriendProfileScreenState extends ConsumerState<FriendProfileScreen> {
                               Text(
                                 'Друзья с ${_formatDate(widget.friend.createdAt!)}',
                                 style: TextStyle(
-                                    fontSize: 13,
-                                    color: context.textSecondary),
+                                    fontSize: 13, color: context.textSecondary),
                               ),
                           ],
                         ),
@@ -257,14 +256,11 @@ class _StatTile extends StatelessWidget {
               const SizedBox(height: 8),
               Text(value,
                   style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: color)),
+                      fontSize: 20, fontWeight: FontWeight.bold, color: color)),
               const SizedBox(height: 4),
               Text(label,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                      fontSize: 11, color: context.textSecondary)),
+                  style: TextStyle(fontSize: 11, color: context.textSecondary)),
             ],
           ),
         ),
@@ -272,4 +268,3 @@ class _StatTile extends StatelessWidget {
     );
   }
 }
-

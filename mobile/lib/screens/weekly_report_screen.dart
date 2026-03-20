@@ -50,7 +50,8 @@ class WeeklyReportScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildReport(BuildContext context, WidgetRef ref, WeeklyReport report) {
+  Widget _buildReport(
+      BuildContext context, WidgetRef ref, WeeklyReport report) {
     final rateColor = report.completionRate >= 80
         ? Colors.green
         : report.completionRate >= 50
@@ -101,7 +102,8 @@ class WeeklyReportScreen extends ConsumerWidget {
                             ),
                           ),
                           const Text('выполнено',
-                              style: TextStyle(fontSize: 12, color: Colors.grey)),
+                              style:
+                                  TextStyle(fontSize: 12, color: Colors.grey)),
                         ],
                       ),
                     ],
@@ -109,7 +111,10 @@ class WeeklyReportScreen extends ConsumerWidget {
                 ),
               ],
             ),
-          ).animate().fadeIn(duration: 500.ms).scale(begin: const Offset(0.9, 0.9)),
+          )
+              .animate()
+              .fadeIn(duration: 500.ms)
+              .scale(begin: const Offset(0.9, 0.9)),
 
           const SizedBox(height: 16),
 
@@ -159,10 +164,12 @@ class WeeklyReportScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 12),
                   if (report.bestHabit != null)
-                    _habitRow(context, '🏆', 'Лучшая', report.bestHabit!, Colors.green),
+                    _habitRow(context, '🏆', 'Лучшая', report.bestHabit!,
+                        Colors.green),
                   if (report.worstHabit != null) ...[
                     const SizedBox(height: 8),
-                    _habitRow(context, '📈', 'Подтяни', report.worstHabit!, Colors.orange),
+                    _habitRow(context, '📈', 'Подтяни', report.worstHabit!,
+                        Colors.orange),
                   ],
                 ],
               ),
@@ -184,12 +191,14 @@ class WeeklyReportScreen extends ConsumerWidget {
                           gradient: AppColors.primaryGradient,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Icon(Icons.auto_awesome, color: Colors.white, size: 18),
+                        child: const Icon(Icons.auto_awesome,
+                            color: Colors.white, size: 18),
                       ),
                       const SizedBox(width: 8),
                       const Text(
                         'AI анализ',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 16),
                       ),
                     ],
                   ),
@@ -254,7 +263,8 @@ class WeeklyReportScreen extends ConsumerWidget {
     );
   }
 
-  Widget _statCard(BuildContext context, String emoji, String value, String label) {
+  Widget _statCard(
+      BuildContext context, String emoji, String value, String label) {
     return GlassCard(
       padding: const EdgeInsets.all(12),
       child: Column(
@@ -277,7 +287,8 @@ class WeeklyReportScreen extends ConsumerWidget {
       children: [
         Text(emoji, style: const TextStyle(fontSize: 20)),
         const SizedBox(width: 8),
-        Text('$label: ', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+        Text('$label: ',
+            style: TextStyle(color: Colors.grey[600], fontSize: 13)),
         Expanded(
           child: Text(
             habitName,
@@ -290,8 +301,18 @@ class WeeklyReportScreen extends ConsumerWidget {
 
   String _formatDate(DateTime date) {
     const months = [
-      'янв', 'фев', 'мар', 'апр', 'май', 'июн',
-      'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'
+      'янв',
+      'фев',
+      'мар',
+      'апр',
+      'май',
+      'июн',
+      'июл',
+      'авг',
+      'сен',
+      'окт',
+      'ноя',
+      'дек'
     ];
     return '${date.day} ${months[date.month - 1]}';
   }

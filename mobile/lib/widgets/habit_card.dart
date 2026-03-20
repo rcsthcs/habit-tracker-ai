@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/habit.dart';
@@ -10,6 +9,7 @@ class HabitCard extends StatefulWidget {
   final bool isCompletedToday;
   final VoidCallback onToggle;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
   final VoidCallback? onDelete;
 
   const HabitCard({
@@ -18,6 +18,7 @@ class HabitCard extends StatefulWidget {
     required this.isCompletedToday,
     required this.onToggle,
     required this.onTap,
+    this.onLongPress,
     this.onDelete,
   });
 
@@ -36,13 +37,13 @@ class _HabitCardState extends State<HabitCard>
     super.initState();
     _checkController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 350),
+      duration: const Duration(milliseconds: 250),
     );
     _scaleAnim = TweenSequence<double>([
       TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.3), weight: 50),
       TweenSequenceItem(tween: Tween(begin: 1.3, end: 1.0), weight: 50),
-    ]).animate(CurvedAnimation(
-        parent: _checkController, curve: Curves.easeOutCubic));
+    ]).animate(
+        CurvedAnimation(parent: _checkController, curve: Curves.easeOutCubic));
   }
 
   @override
@@ -107,148 +108,153 @@ class _HabitCardState extends State<HabitCard>
   Widget build(BuildContext context) {
     final card = RepaintBoundary(
       child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-          child: Container(
-            decoration: BoxDecoration(
-              color: context.glassColor,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: widget.isCompletedToday
-                    ? context.successColor.withValues(alpha: 0.3)
-                    : context.glassBorder,
-                width: 1,
-              ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        child: Container(
+          decoration: BoxDecoration(
+            color: context.isDark
+                ? AppColors.darkSurfaceVariant
+                : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: widget.isCompletedToday
+                  ? context.successColor.withValues(alpha: 0.25)
+                  : context.dividerColor,
+              width: 1,
             ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: widget.onTap,
-                borderRadius: BorderRadius.circular(18),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      // Animated checkbox / counter
-                      GestureDetector(
-                        onTap: _handleToggle,
-                        child: ScaleTransition(
-                          scale: _scaleAnim,
-                          child: widget.habit.dailyTarget > 1
-                              ? _buildMultiCounter()
-                              : AnimatedContainer(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeOutCubic,
-                            width: 34,
-                            height: 34,
-                            decoration: BoxDecoration(
-                              gradient: widget.isCompletedToday
-                                  ? LinearGradient(
-                                      colors: [
-                                        widget.habit.colorValue,
-                                        widget.habit.colorValue
-                                            .withValues(alpha: 0.7),
-                                      ],
-                                    )
-                                  : null,
-                              color: widget.isCompletedToday
-                                  ? null
-                                  : Colors.transparent,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: widget.habit.colorValue,
-                                width: 2,
-                              ),
-                              boxShadow: widget.isCompletedToday
-                                  ? [
-                                      BoxShadow(
-                                        color: widget.habit.colorValue
-                                            .withValues(alpha: 0.3),
-                                        blurRadius: 8,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black
+                    .withValues(alpha: context.isDark ? 0.25 : 0.06),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: widget.onTap,
+              onLongPress: widget.onLongPress,
+              borderRadius: BorderRadius.circular(16),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        // Animated checkbox / counter
+                        GestureDetector(
+                          onTap: _handleToggle,
+                          child: ScaleTransition(
+                            scale: _scaleAnim,
+                            child: widget.habit.dailyTarget > 1
+                                ? _buildMultiCounter()
+                                : AnimatedContainer(
+                                    duration: const Duration(milliseconds: 300),
+                                    curve: Curves.easeOutCubic,
+                                    width: 34,
+                                    height: 34,
+                                    decoration: BoxDecoration(
+                                      gradient: widget.isCompletedToday
+                                          ? LinearGradient(
+                                              colors: [
+                                                widget.habit.colorValue,
+                                                widget.habit.colorValue
+                                                    .withValues(alpha: 0.7),
+                                              ],
+                                            )
+                                          : null,
+                                      color: widget.isCompletedToday
+                                          ? null
+                                          : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
+                                        color: widget.habit.colorValue,
+                                        width: 2,
                                       ),
-                                    ]
-                                  : null,
-                            ),
-                            child: widget.isCompletedToday
-                                ? const Icon(Icons.check_rounded,
-                                    color: Colors.white, size: 20)
-                                : null,
+                                      boxShadow: widget.isCompletedToday
+                                          ? [
+                                              BoxShadow(
+                                                color: widget.habit.colorValue
+                                                    .withValues(alpha: 0.3),
+                                                blurRadius: 8,
+                                              ),
+                                            ]
+                                          : null,
+                                    ),
+                                    child: widget.isCompletedToday
+                                        ? const Icon(Icons.check_rounded,
+                                            color: Colors.white, size: 20)
+                                        : null,
+                                  ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 14),
-                      // Info
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              widget.habit.name,
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                decoration: widget.isCompletedToday
-                                    ? TextDecoration.lineThrough
-                                    : null,
-                                color: widget.isCompletedToday
-                                    ? context.textSecondary
-                                    : context.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(height: 5),
-                            Row(
-                              children: [
-                                if (widget.habit.currentStreak > 0) ...[
-                                  _StreakPill(
-                                      streak: widget.habit.currentStreak),
-                                  const SizedBox(width: 8),
-                                ],
-                                Icon(Icons.pie_chart_rounded,
-                                    size: 13, color: context.textSecondary),
-                                const SizedBox(width: 3),
-                                Text(
-                                  '${widget.habit.completionRate.toStringAsFixed(0)}%',
-                                  style: TextStyle(
-                                      fontSize: 12,
-                                      color: context.textSecondary),
+                        const SizedBox(width: 14),
+                        // Info
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.habit.name,
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  decoration: widget.isCompletedToday
+                                      ? TextDecoration.lineThrough
+                                      : null,
+                                  color: widget.isCompletedToday
+                                      ? context.textSecondary
+                                      : context.textPrimary,
                                 ),
-                                if (widget.habit.targetTime != null) ...[
-                                  const SizedBox(width: 8),
-                                  Icon(Icons.schedule_rounded,
+                              ),
+                              const SizedBox(height: 5),
+                              Row(
+                                children: [
+                                  if (widget.habit.currentStreak > 0) ...[
+                                    _StreakPill(
+                                        streak: widget.habit.currentStreak),
+                                    const SizedBox(width: 8),
+                                  ],
+                                  Icon(Icons.pie_chart_rounded,
                                       size: 13, color: context.textSecondary),
                                   const SizedBox(width: 3),
                                   Text(
-                                    widget.habit.targetTime!,
+                                    '${widget.habit.completionRate.toStringAsFixed(0)}%',
                                     style: TextStyle(
                                         fontSize: 12,
                                         color: context.textSecondary),
                                   ),
+                                  if (widget.habit.targetTime != null) ...[
+                                    const SizedBox(width: 8),
+                                    Icon(Icons.schedule_rounded,
+                                        size: 13, color: context.textSecondary),
+                                    const SizedBox(width: 3),
+                                    Text(
+                                      widget.habit.targetTime!,
+                                      style: TextStyle(
+                                          fontSize: 12,
+                                          color: context.textSecondary),
+                                    ),
+                                  ],
                                 ],
-                              ],
-                            ),
-                          ],
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      // Category indicator
-                      Container(
-                        width: 4,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: widget.habit.colorValue,
-                          borderRadius: BorderRadius.circular(2),
+                        // Category indicator
+                        Container(
+                          width: 4,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: widget.habit.colorValue,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ),
             ),
           ),
         ),
-      ),
       ),
     );
 
@@ -262,7 +268,7 @@ class _HabitCardState extends State<HabitCard>
           margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
           decoration: BoxDecoration(
             gradient: AppColors.accentGradient,
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(16),
           ),
           child: const Icon(Icons.delete_rounded, color: Colors.white),
         ),
@@ -305,7 +311,10 @@ class _StreakPill extends StatelessWidget {
         gradient: LinearGradient(
           colors: streak >= 7
               ? [Colors.orange, Colors.deepOrange]
-              : [AppColors.primary.withValues(alpha: 0.15), AppColors.secondary.withValues(alpha: 0.1)],
+              : [
+                  AppColors.primary.withValues(alpha: 0.15),
+                  AppColors.secondary.withValues(alpha: 0.1)
+                ],
         ),
         borderRadius: BorderRadius.circular(8),
       ),
@@ -313,8 +322,7 @@ class _StreakPill extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.local_fire_department,
-              size: 12,
-              color: streak >= 7 ? Colors.white : Colors.orange[700]),
+              size: 12, color: streak >= 7 ? Colors.white : Colors.orange[700]),
           const SizedBox(width: 2),
           Text(
             '$streak дн.',
@@ -329,4 +337,3 @@ class _StreakPill extends StatelessWidget {
     );
   }
 }
-

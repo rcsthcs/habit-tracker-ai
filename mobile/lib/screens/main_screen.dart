@@ -1,6 +1,6 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/app_animations.dart';
 import '../core/app_colors.dart';
 import '../providers/app_providers.dart';
 import 'home_screen.dart';
@@ -41,9 +41,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
     return Scaffold(
       body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 350),
-        switchInCurve: Curves.easeOutCubic,
-        switchOutCurve: Curves.easeInCubic,
+        duration: AppAnimations.normal,
+        switchInCurve: AppAnimations.enterCurve,
+        switchOutCurve: AppAnimations.exitCurve,
         transitionBuilder: (child, animation) => FadeTransition(
           opacity: animation,
           child: child,
@@ -55,73 +55,69 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       ),
       extendBody: false,
       bottomNavigationBar: RepaintBoundary(
-        child: ClipRRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Container(
-            decoration: BoxDecoration(
-              color: (isDark ? AppColors.darkSurface : AppColors.lightSurface)
-                  .withValues(alpha: 0.85),
-              border: Border(
-                top: BorderSide(
-                  color: isDark ? AppColors.darkDivider : AppColors.lightDivider,
-                  width: 0.5,
+        child: Container(
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+                border: Border(
+                  top: BorderSide(
+                    color:
+                        isDark ? AppColors.darkDivider : AppColors.lightDivider,
+                    width: 0.5,
+                  ),
                 ),
               ),
-            ),
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _NavItem(
-                      icon: Icons.home_outlined,
-                      activeIcon: Icons.home_rounded,
-                      label: 'Главная',
-                      isActive: _currentIndex == 0,
-                      onTap: () => _onTabChanged(0),
-                      primaryColor: primaryColor,
-                    ),
-                    _NavItem(
-                      icon: Icons.bar_chart_outlined,
-                      activeIcon: Icons.bar_chart_rounded,
-                      label: 'Прогресс',
-                      isActive: _currentIndex == 1,
-                      onTap: () => _onTabChanged(1),
-                      primaryColor: primaryColor,
-                    ),
-                    _NavItem(
-                      icon: Icons.people_outline_rounded,
-                      activeIcon: Icons.people_rounded,
-                      label: 'Друзья',
-                      isActive: _currentIndex == 2,
-                      onTap: () => _onTabChanged(2),
-                      primaryColor: primaryColor,
-                    ),
-                    _NavItem(
-                      icon: Icons.chat_bubble_outline_rounded,
-                      activeIcon: Icons.chat_bubble_rounded,
-                      label: 'AI Чат',
-                      isActive: _currentIndex == 3,
-                      onTap: () => _onTabChanged(3),
-                      primaryColor: primaryColor,
-                    ),
-                    _NavItem(
-                      icon: Icons.settings_outlined,
-                      activeIcon: Icons.settings_rounded,
-                      label: 'Ещё',
-                      isActive: _currentIndex == 4,
-                      onTap: () => _onTabChanged(4),
-                      primaryColor: primaryColor,
-                      badge: unreadCount,
-                    ),
-                  ],
+              child: SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _NavItem(
+                        icon: Icons.home_outlined,
+                        activeIcon: Icons.home_rounded,
+                        label: 'Главная',
+                        isActive: _currentIndex == 0,
+                        onTap: () => _onTabChanged(0),
+                        primaryColor: primaryColor,
+                      ),
+                      _NavItem(
+                        icon: Icons.insights_outlined,
+                        activeIcon: Icons.insights_rounded,
+                        label: 'Прогресс',
+                        isActive: _currentIndex == 1,
+                        onTap: () => _onTabChanged(1),
+                        primaryColor: primaryColor,
+                      ),
+                      _NavItem(
+                        icon: Icons.people_outline_rounded,
+                        activeIcon: Icons.people_rounded,
+                        label: 'Друзья',
+                        isActive: _currentIndex == 2,
+                        onTap: () => _onTabChanged(2),
+                        primaryColor: primaryColor,
+                      ),
+                      _NavItem(
+                        icon: Icons.chat_bubble_outline_rounded,
+                        activeIcon: Icons.chat_bubble_rounded,
+                        label: 'AI Чат',
+                        isActive: _currentIndex == 3,
+                        onTap: () => _onTabChanged(3),
+                        primaryColor: primaryColor,
+                      ),
+                      _NavItem(
+                        icon: Icons.settings_outlined,
+                        activeIcon: Icons.settings_rounded,
+                        label: 'Ещё',
+                        isActive: _currentIndex == 4,
+                        onTap: () => _onTabChanged(4),
+                        primaryColor: primaryColor,
+                        badge: unreadCount,
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ),
-        ),
         ),
       ),
     );
@@ -158,8 +154,8 @@ class _NavItem extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              curve: Curves.easeOutCubic,
+              duration: AppAnimations.fast,
+              curve: AppAnimations.enterCurve,
               padding: EdgeInsets.symmetric(
                 horizontal: isActive ? 16 : 8,
                 vertical: 4,
@@ -173,9 +169,10 @@ class _NavItem extends StatelessWidget {
               child: Badge(
                 isLabelVisible: badge > 0,
                 label: Text('$badge',
-                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700)),
+                    style: const TextStyle(
+                        fontSize: 10, fontWeight: FontWeight.w700)),
                 child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 200),
+                  duration: AppAnimations.fast,
                   child: Icon(
                     isActive ? activeIcon : icon,
                     key: ValueKey(isActive),
@@ -192,7 +189,7 @@ class _NavItem extends StatelessWidget {
             ),
             const SizedBox(height: 2),
             AnimatedDefaultTextStyle(
-              duration: const Duration(milliseconds: 250),
+              duration: AppAnimations.fast,
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
@@ -203,7 +200,17 @@ class _NavItem extends StatelessWidget {
                         .onSurface
                         .withValues(alpha: 0.5),
               ),
-              child: Text(label),
+              child: SizedBox(
+                height: 14,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
             ),
           ],
         ),
@@ -211,4 +218,3 @@ class _NavItem extends StatelessWidget {
     );
   }
 }
-

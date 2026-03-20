@@ -33,4 +33,3 @@ class NotificationService {
     _pollTimer = null;
   }
 }
-

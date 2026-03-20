@@ -35,12 +35,14 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
 
   // --- Validators ---
   String? _validateUsername(String? value) {
-    if (value == null || value.trim().isEmpty) return 'Введите имя пользователя';
+    if (value == null || value.trim().isEmpty)
+      return 'Введите имя пользователя';
     final v = value.trim();
     if (v.length < 3) return 'Минимум 3 символа';
     if (v.length > 30) return 'Максимум 30 символов';
     if (v.contains(' ')) return 'Пробелы запрещены';
-    if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(v)) return 'Только буквы, цифры и _';
+    if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(v))
+      return 'Только буквы, цифры и _';
     return null;
   }
 
@@ -145,10 +147,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                     ),
                     child: const Icon(Icons.auto_awesome,
                         color: Colors.white, size: 42),
-                  )
-                      .animate()
-                      .fadeIn(duration: 600.ms)
-                      .scale(begin: const Offset(0.5, 0.5), curve: Curves.easeOutBack),
+                  ).animate().fadeIn(duration: 600.ms).scale(
+                      begin: const Offset(0.5, 0.5), curve: Curves.easeOutBack),
                   const SizedBox(height: 24),
                   Text(
                     'Habit Tracker AI',
@@ -181,7 +181,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                         decoration: BoxDecoration(
                           color: context.glassColor,
                           borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: context.glassBorder, width: 1),
+                          border:
+                              Border.all(color: context.glassBorder, width: 1),
                         ),
                         child: Form(
                           key: _formKey,
@@ -193,10 +194,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                                   padding: const EdgeInsets.all(12),
                                   margin: const EdgeInsets.only(bottom: 16),
                                   decoration: BoxDecoration(
-                                    color: context.errorColor.withValues(alpha: 0.1),
+                                    color: context.errorColor
+                                        .withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
-                                      color: context.errorColor.withValues(alpha: 0.3),
+                                      color: context.errorColor
+                                          .withValues(alpha: 0.3),
                                     ),
                                   ),
                                   child: Row(
@@ -222,7 +225,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                                     ? AutovalidateMode.disabled
                                     : AutovalidateMode.onUserInteraction,
                                 inputFormatters: [
-                                  FilteringTextInputFormatter.deny(RegExp(r'\s')),
+                                  FilteringTextInputFormatter.deny(
+                                      RegExp(r'\s')),
                                 ],
                                 decoration: InputDecoration(
                                   labelText: 'Имя пользователя',
@@ -244,13 +248,15 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                                         padding: const EdgeInsets.only(top: 16),
                                         child: TextFormField(
                                           controller: _emailController,
-                                          keyboardType: TextInputType.emailAddress,
+                                          keyboardType:
+                                              TextInputType.emailAddress,
                                           validator: _validateEmail,
-                                          autovalidateMode:
-                                              AutovalidateMode.onUserInteraction,
+                                          autovalidateMode: AutovalidateMode
+                                              .onUserInteraction,
                                           decoration: const InputDecoration(
                                             labelText: 'Email',
-                                            prefixIcon: Icon(Icons.email_outlined),
+                                            prefixIcon:
+                                                Icon(Icons.email_outlined),
                                             hintText: 'example@mail.com',
                                           ),
                                         ),
@@ -274,8 +280,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                                     icon: Icon(_obscurePassword
                                         ? Icons.visibility_off
                                         : Icons.visibility),
-                                    onPressed: () => setState(
-                                        () => _obscurePassword = !_obscurePassword),
+                                    onPressed: () => setState(() =>
+                                        _obscurePassword = !_obscurePassword),
                                   ),
                                 ),
                                 onFieldSubmitted: (_) => _submit(),
@@ -367,7 +373,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                                     shape: RoundedRectangleBorder(
                                         borderRadius:
                                             BorderRadius.circular(14)),
-                                    side: BorderSide(color: context.dividerColor),
+                                    side:
+                                        BorderSide(color: context.dividerColor),
                                   ),
                                 ),
                               ),
@@ -404,4 +411,3 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     );
   }
 }
-

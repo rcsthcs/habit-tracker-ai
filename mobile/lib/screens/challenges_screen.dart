@@ -178,7 +178,8 @@ class _ChallengesScreenState extends ConsumerState<ChallengesScreen>
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     gradient: isCompleted
-                        ? const LinearGradient(colors: [Colors.green, Colors.teal])
+                        ? const LinearGradient(
+                            colors: [Colors.green, Colors.teal])
                         : AppColors.primaryGradient,
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -248,7 +249,8 @@ class _ChallengesScreenState extends ConsumerState<ChallengesScreen>
             if (challenge.rewardText.isNotEmpty) ...[
               const SizedBox(height: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
@@ -290,7 +292,8 @@ class _ChallengesScreenState extends ConsumerState<ChallengesScreen>
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 4),
-                const Text('Нет сломанных серий', style: TextStyle(color: Colors.grey)),
+                const Text('Нет сломанных серий',
+                    style: TextStyle(color: Colors.grey)),
               ],
             ),
           );
@@ -309,7 +312,8 @@ class _ChallengesScreenState extends ConsumerState<ChallengesScreen>
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.healing, color: Colors.orange, size: 28),
+                        const Icon(Icons.healing,
+                            color: Colors.orange, size: 28),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
@@ -371,7 +375,8 @@ class _ChallengesScreenState extends ConsumerState<ChallengesScreen>
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.transparent,
             shadowColor: Colors.transparent,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         ),
       ),

@@ -139,9 +139,7 @@ class WeeklyReport {
           ? (json['mood_avg'] as num).toDouble()
           : null,
       aiSummary: json['ai_summary'],
-      aiTips: json['ai_tips'] != null
-          ? List<String>.from(json['ai_tips'])
-          : [],
+      aiTips: json['ai_tips'] != null ? List<String>.from(json['ai_tips']) : [],
       createdAt: DateTime.parse(json['created_at']),
     );
   }
