@@ -18,6 +18,7 @@ class _ChallengesScreenState extends ConsumerState<ChallengesScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   bool _generating = false;
+  final Set<int> _updatingChallengeIds = <int>{};
 
   @override
   void initState() {
@@ -46,6 +47,30 @@ class _ChallengesScreenState extends ConsumerState<ChallengesScreen>
       }
     } finally {
       if (mounted) setState(() => _generating = false);
+    }
+  }
+
+  Future<void> _incrementChallengeProgress(Challenge challenge) async {
+    if (_updatingChallengeIds.contains(challenge.id)) return;
+    setState(() => _updatingChallengeIds.add(challenge.id));
+    try {
+      await ref
+          .read(challengesProvider.notifier)
+          .incrementChallengeProgress(challenge.id);
+      ref.invalidate(streakRecoveryProvider);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Прогресс челленджа обновлён')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Не удалось обновить прогресс: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _updatingChallengeIds.remove(challenge.id));
+      }
     }
   }
 
@@ -146,15 +171,20 @@ class _ChallengesScreenState extends ConsumerState<ChallengesScreen>
           );
         }
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: filtered.length,
-          itemBuilder: (context, index) {
-            return _buildChallengeCard(filtered[index])
-                .animate()
-                .fadeIn(duration: 300.ms, delay: (index * 80).ms)
-                .slideY(begin: 0.05);
-          },
+        return RefreshIndicator(
+          onRefresh: () =>
+              ref.read(challengesProvider.notifier).loadChallenges(),
+          child: ListView.builder(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16),
+            itemCount: filtered.length,
+            itemBuilder: (context, index) {
+              return _buildChallengeCard(filtered[index])
+                  .animate()
+                  .fadeIn(duration: 300.ms, delay: (index * 80).ms)
+                  .slideY(begin: 0.05);
+            },
+          ),
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -165,6 +195,7 @@ class _ChallengesScreenState extends ConsumerState<ChallengesScreen>
   Widget _buildChallengeCard(Challenge challenge) {
     final typeIcon = _typeIcon(challenge.type);
     final isCompleted = challenge.isCompleted;
+    final isUpdating = _updatingChallengeIds.contains(challenge.id);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -243,6 +274,23 @@ class _ChallengesScreenState extends ConsumerState<ChallengesScreen>
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 10),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: isUpdating
+                      ? null
+                      : () => _incrementChallengeProgress(challenge),
+                  icon: isUpdating
+                      ? const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.check_circle_outline_rounded),
+                  label: Text(isUpdating ? 'Сохраняю…' : 'Засчитать шаг'),
+                ),
               ),
             ],
 

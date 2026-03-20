@@ -12,6 +12,7 @@ from app.models.notification import Notification
 from app.models.challenge import Challenge, ChallengeStatus
 from app.models.user import User
 from app.config import get_settings
+from app.notifications.push_service import send_push_to_user
 import logging
 
 logger = logging.getLogger(__name__)
@@ -40,6 +41,18 @@ async def _add_notification_db(db: AsyncSession, user_id: int, type_: str,
         habit_id=habit_id,
     )
     db.add(notification)
+    await db.flush()
+    await send_push_to_user(
+        db=db,
+        user_id=user_id,
+        title=title,
+        body=body,
+        data={
+            "type": type_,
+            "notification_id": str(notification.id),
+            "habit_id": str(habit_id) if habit_id is not None else "",
+        },
+    )
 
 
 async def check_and_generate_reminders():

@@ -18,6 +18,13 @@ class ApiService {
   late final Dio _dio;
   String? _token;
 
+  bool _isRetryableChatError(DioException error) {
+    return error.type == DioExceptionType.connectionTimeout ||
+        error.type == DioExceptionType.receiveTimeout ||
+        error.type == DioExceptionType.sendTimeout ||
+        error.type == DioExceptionType.connectionError;
+  }
+
   ApiService() {
     final baseUrl = kIsWeb ? AppConfig.baseUrlWeb : AppConfig.baseUrl;
     _dio = Dio(BaseOptions(
@@ -86,6 +93,12 @@ class ApiService {
     final token = response.data['access_token'];
     await _saveToken(token);
     return token;
+  }
+
+  Future<void> resendVerificationEmail(String email) async {
+    await _dio.post('/auth/resend-verification', data: {
+      'email': email,
+    });
   }
 
   Future<User> getMe() async {
@@ -193,9 +206,21 @@ class ApiService {
       if (contextHints != null && contextHints.isNotEmpty)
         'context_hints': contextHints,
     };
-    final response = await _dio.post('/chat/',
-        data: payload, options: Options(receiveTimeout: AppConfig.chatTimeout));
-    return ChatMessage.fromJson(response.data);
+    try {
+      final response = await _dio.post('/chat/',
+          data: payload,
+          options: Options(receiveTimeout: AppConfig.chatTimeout));
+      return ChatMessage.fromJson(response.data);
+    } on DioException catch (error) {
+      if (!_isRetryableChatError(error)) rethrow;
+
+      final retryResponse = await _dio.post(
+        '/chat/',
+        data: payload,
+        options: Options(receiveTimeout: const Duration(seconds: 180)),
+      );
+      return ChatMessage.fromJson(retryResponse.data);
+    }
   }
 
   Future<List<ChatSession>> getChatSessions() async {
@@ -257,6 +282,14 @@ class ApiService {
 
   Future<void> clearAllNotifications() async {
     await _dio.delete('/notifications/');
+  }
+
+  Future<void> registerDeviceToken(String token,
+      {String platform = 'unknown'}) async {
+    await _dio.post('/notifications/device-token', data: {
+      'token': token,
+      'platform': platform,
+    });
   }
 
   // ─── Friends ───

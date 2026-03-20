@@ -40,6 +40,8 @@ python -m venv ../.venv
 ..\.venv\Scripts\activate
 # macOS/Linux:
 source ../.venv/bin/activate
+# fish shell:
+source ../.venv/bin/activate.fish
 
 # Установить зависимости
 pip install -r requirements.txt
@@ -50,6 +52,16 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
 Сервер запустится на http://localhost:8000
 Документация API: http://localhost:8000/docs
+
+### Настройка Google/Auth/Email/Push
+
+1. Скопируйте `backend/.env.example` в `backend/.env` и заполните:
+    - `GOOGLE_CLIENT_ID` (Web OAuth Client ID, не service account)
+    - SMTP-параметры (`SMTP_HOST`, `SMTP_USER`, `SMTP_PASSWORD`, ...)
+    - `FIREBASE_SERVICE_ACCOUNT_FILE` (абсолютный путь к JSON service account)
+2. Для Flutter Google Sign-In укажите `googleServerClientId` в `mobile/lib/core/config.dart`.
+3. После регистрации email должен быть подтвержден через `/api/auth/verify-email?token=...`.
+4. Для push-уведомлений клиент должен отправить FCM token в `/api/notifications/device-token`.
 
 ### 2. AI Чат-бот (опционально)
 

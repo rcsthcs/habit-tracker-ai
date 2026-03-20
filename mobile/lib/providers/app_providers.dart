@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dio/dio.dart';
+import '../core/config.dart';
 import '../services/api_service.dart';
+import '../services/push_notification_service.dart';
 import '../models/user.dart';
 import '../models/habit.dart';
 import '../models/chat_message.dart';
@@ -78,15 +80,34 @@ class AuthState {
 
 class AuthNotifier extends StateNotifier<AuthState> {
   final ApiService _api;
-  final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
+  late final GoogleSignIn _googleSignIn;
 
-  AuthNotifier(this._api) : super(AuthState());
+  AuthNotifier(this._api) : super(AuthState()) {
+    _googleSignIn = GoogleSignIn(
+      scopes: ['email', 'profile'],
+      serverClientId: AppConfig.googleServerClientId.isNotEmpty
+          ? AppConfig.googleServerClientId
+          : null,
+    );
+  }
+
+  String? _extractApiDetail(Object error) {
+    if (error is DioException) {
+      final data = error.response?.data;
+      if (data is Map<String, dynamic>) {
+        final detail = data['detail'];
+        if (detail is String) return detail;
+      }
+    }
+    return null;
+  }
 
   Future<void> checkAuth() async {
     await _api.loadToken();
     if (_api.isLoggedIn) {
       try {
         final user = await _api.getMe();
+        await PushNotificationService.setupAndRegisterToken(_api);
         state = AuthState(status: AuthStatus.authenticated, user: user);
       } catch (_) {
         await _api.clearToken();
@@ -101,8 +122,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       await _api.login(username, password);
       final user = await _api.getMe();
+      await PushNotificationService.setupAndRegisterToken(_api);
       state = AuthState(status: AuthStatus.authenticated, user: user);
     } catch (e) {
+      final detail = _extractApiDetail(e);
+      if (detail != null && detail.toLowerCase().contains('email not verified')) {
+        state = AuthState(
+          status: AuthStatus.unauthenticated,
+          error: 'Почта не подтверждена. Проверьте письмо и подтвердите email.',
+        );
+        return;
+      }
       state = AuthState(
           status: AuthStatus.unauthenticated,
           error: 'Неверный логин или пароль');
@@ -125,6 +155,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       await _api.loginWithGoogle(idToken);
       final user = await _api.getMe();
+      await PushNotificationService.setupAndRegisterToken(_api);
       state = AuthState(status: AuthStatus.authenticated, user: user);
     } catch (e) {
       state = AuthState(
@@ -136,11 +167,29 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> register(String username, String email, String password) async {
     try {
       await _api.register(username, email, password);
-      await login(username, password);
+      state = AuthState(
+        status: AuthStatus.unauthenticated,
+        error: 'Регистрация успешна. Подтвердите почту по ссылке из письма.',
+      );
     } catch (e) {
       state = AuthState(
           status: AuthStatus.unauthenticated,
           error: 'Ошибка регистрации. Попробуйте другое имя.');
+    }
+  }
+
+  Future<void> resendVerificationEmail(String email) async {
+    try {
+      await _api.resendVerificationEmail(email);
+      state = AuthState(
+        status: AuthStatus.unauthenticated,
+        error: 'Письмо отправлено повторно. Проверьте почту.',
+      );
+    } catch (_) {
+      state = AuthState(
+        status: AuthStatus.unauthenticated,
+        error: 'Не удалось отправить письмо повторно.',
+      );
     }
   }
 
@@ -366,12 +415,16 @@ class ChatNotifier extends StateNotifier<ChatState> {
   ChatMessage _buildAssistantFallback({
     required String? currentChatId,
     required bool isNetworkError,
+    String? contextSource,
   }) {
+    final isMoodCoachRequest = contextSource == 'mood_screen';
     return ChatMessage(
       sessionId: currentChatId,
       role: 'assistant',
       content: isNetworkError
-          ? 'Похоже, сейчас проблема с сетью. Проверь подключение и попробуй ещё раз.'
+          ? (isMoodCoachRequest
+              ? 'Не удалось подключить AI-коуча из экрана настроения. Проверь интернет и попробуй ещё раз через минуту.'
+              : 'Похоже, сейчас проблема с сетью. Проверь подключение и попробуй ещё раз.')
           : 'Я получил запрос, но не смог подготовить структурированный ответ. Попробуй переформулировать — я отвечу текстом и предложу шаги.',
       timestamp: DateTime.now(),
       suggestedHabits: const [],
@@ -457,6 +510,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
             _buildAssistantFallback(
               currentChatId: currentChatId,
               isNetworkError: _isNetworkError(error),
+              contextSource: contextHints?['source']?.toString(),
             ),
           ],
         );
@@ -491,6 +545,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
           _buildAssistantFallback(
             currentChatId: currentChatId,
             isNetworkError: _isNetworkError(error),
+            contextSource: contextHints?['source']?.toString(),
           ),
         ],
       );
@@ -810,6 +865,15 @@ class ChallengesNotifier extends StateNotifier<AsyncValue<List<Challenge>>> {
   Future<void> generateChallenges() async {
     try {
       await _api.generateChallenges();
+      await loadChallenges();
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
+  Future<void> incrementChallengeProgress(int challengeId) async {
+    try {
+      await _api.updateChallengeProgress(challengeId);
       await loadChallenges();
     } catch (e, st) {
       state = AsyncValue.error(e, st);

@@ -15,7 +15,7 @@ from app.models.mood_log import MoodLog
 from app.models.user_activity import UserActivity
 from app.models.challenge import Challenge, ChallengeStatus
 from app.models.achievement import Achievement, ACHIEVEMENT_META
-from app.nlp.llm_provider import get_llm_provider, LLMProvider
+from app.nlp.llm_provider import get_llm_provider, LLMProvider, FallbackProvider
 from app.nlp.intent_parser import parse_intent, Intent
 from app.nlp.prompts import build_system_prompt, build_motivation_message
 from app.ml.pattern_analyzer import PatternAnalyzer
@@ -520,6 +520,13 @@ class HabitChatbot:
         system_prompt = build_system_prompt(user_context)
 
         response = await self.llm.generate(system_prompt, message, history)
+        normalized_response = (response or "").lower()
+        if (
+            "не могу ответить" in normalized_response
+            and "недоступен" in normalized_response
+        ) or "api ключ не настроен" in normalized_response:
+            fallback = FallbackProvider()
+            response = await fallback.generate(system_prompt, message, history)
         should_include_habits = parsed.intent in {
             Intent.ADD_HABIT,
             Intent.GET_ADVICE,

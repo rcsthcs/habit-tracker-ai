@@ -13,7 +13,14 @@ import '../widgets/add_habit_bottom_sheet.dart';
 import '../widgets/shimmer_loader.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
-  const ChatScreen({super.key});
+  final String? initialMessage;
+  final Map<String, dynamic>? initialContextHints;
+
+  const ChatScreen({
+    super.key,
+    this.initialMessage,
+    this.initialContextHints,
+  });
 
   @override
   ConsumerState<ChatScreen> createState() => _ChatScreenState();
@@ -27,6 +34,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   bool _historyLoading = true;
   int _lastMessageCount = 0;
   String? _lastChatId;
+  bool _initialPromptSent = false;
 
   final Set<String> _addingSuggestionKeys = {};
   final Set<String> _addedSuggestionKeys = {};
@@ -84,6 +92,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       _lastMessageCount = chatState.messages.length;
     });
     _scrollToBottom(animated: false);
+    await _sendInitialPromptIfNeeded();
+  }
+
+  Future<void> _sendInitialPromptIfNeeded() async {
+    if (_initialPromptSent) return;
+    final initialMessage = widget.initialMessage?.trim() ?? '';
+    if (initialMessage.isEmpty) return;
+    _initialPromptSent = true;
+    _controller.text = initialMessage;
+    await _send(contextHints: widget.initialContextHints);
   }
 
   Future<void> _createNewChat() async {
@@ -1100,6 +1118,23 @@ class _ChatSessionsSheet extends StatefulWidget {
 class _ChatSessionsSheetState extends State<_ChatSessionsSheet> {
   final Set<String> _selected = {};
   bool _deleting = false;
+  late List<ChatSession> _localChats;
+
+  @override
+  void initState() {
+    super.initState();
+    _localChats = List<ChatSession>.from(widget.chats);
+  }
+
+  @override
+  void didUpdateWidget(covariant _ChatSessionsSheet oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.chats != widget.chats) {
+      _localChats = List<ChatSession>.from(widget.chats);
+      _selected
+          .removeWhere((id) => !_localChats.any((chat) => chat.chatId == id));
+    }
+  }
 
   bool get _selectionMode => _selected.isNotEmpty;
 
@@ -1115,12 +1150,58 @@ class _ChatSessionsSheetState extends State<_ChatSessionsSheet> {
 
   Future<void> _deleteSelected() async {
     final ids = List<String>.from(_selected);
-    setState(() => _deleting = true);
+    final previousChats = List<ChatSession>.from(_localChats);
+    setState(() {
+      _deleting = true;
+      _localChats.removeWhere((chat) => ids.contains(chat.chatId));
+      _selected.clear();
+    });
+
+    if (_localChats.isEmpty && mounted) {
+      Navigator.pop(context);
+    }
     try {
       await widget.onDeleteSelected(ids);
-      if (mounted) Navigator.pop(context);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Удалено чатов: ${ids.length}')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _localChats = previousChats;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Не удалось удалить выбранные чаты.')),
+      );
     } finally {
       if (mounted) setState(() => _deleting = false);
+    }
+  }
+
+  Future<void> _deleteSingle(ChatSession chat, int index) async {
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() {
+      _localChats.removeAt(index);
+      _selected.remove(chat.chatId);
+    });
+
+    try {
+      await widget.onDeleteSelected([chat.chatId]);
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(content: Text('Чат "${chat.title}" удалён')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        final safeIndex = index.clamp(0, _localChats.length);
+        _localChats.insert(safeIndex, chat);
+      });
+      messenger.showSnackBar(
+        const SnackBar(
+            content: Text('Не удалось удалить чат. Попробуйте снова.')),
+      );
     }
   }
 
@@ -1149,7 +1230,7 @@ class _ChatSessionsSheetState extends State<_ChatSessionsSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final chats = widget.chats;
+    final chats = _localChats;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -1235,12 +1316,7 @@ class _ChatSessionsSheetState extends State<_ChatSessionsSheet> {
                       direction: DismissDirection.endToStart,
                       confirmDismiss: (_) => _confirmDeleteSingle(chat),
                       onDismissed: (_) async {
-                        final messenger = ScaffoldMessenger.of(context);
-                        await widget.onDeleteSelected([chat.chatId]);
-                        if (!mounted) return;
-                        messenger.showSnackBar(
-                          SnackBar(content: Text('Чат "${chat.title}" удалён')),
-                        );
+                        await _deleteSingle(chat, index);
                       },
                       background: Container(
                         alignment: Alignment.centerRight,

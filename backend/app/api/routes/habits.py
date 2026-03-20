@@ -2,10 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from datetime import datetime, date, timezone, timedelta
+import re
 from app.db.database import get_db
 from app.models.user import User
 from app.models.habit import Habit, HABIT_NAME_SUGGESTIONS
 from app.models.habit_log import HabitLog
+from app.models.challenge import Challenge, ChallengeStatus, ChallengeType
 from app.schemas.habit import (
     HabitCreate, HabitUpdate, HabitResponse,
     HabitLogCreate, HabitLogResponse,
@@ -106,6 +108,106 @@ async def _completion_rate(db: AsyncSession, habit_id: int, days: int = 30) -> f
         return 0.0
     completed = sum(1 for l in logs if l.completed)
     return round(completed / len(logs) * 100, 1)
+
+
+async def _recalculate_active_challenges(
+    db: AsyncSession,
+    user_id: int,
+    reference_date: date,
+) -> None:
+    result = await db.execute(
+        select(Challenge).where(
+            Challenge.user_id == user_id,
+            Challenge.status == ChallengeStatus.ACTIVE,
+            Challenge.start_date <= reference_date,
+            Challenge.end_date >= reference_date,
+        )
+    )
+    challenges = result.scalars().all()
+    if not challenges:
+        return
+
+    habits_result = await db.execute(
+        select(Habit).where(Habit.user_id == user_id, Habit.is_active == True)
+    )
+    active_habits = habits_result.scalars().all()
+    active_habit_ids = [h.id for h in active_habits]
+    habit_by_id = {h.id: h for h in active_habits}
+
+    for challenge in challenges:
+        new_count = challenge.current_count
+
+        if challenge.type == ChallengeType.DAILY:
+            if challenge.target_habit_id is None:
+                continue
+            logs_result = await db.execute(
+                select(HabitLog).where(
+                    HabitLog.habit_id == challenge.target_habit_id,
+                    HabitLog.completed == True,
+                    HabitLog.date >= challenge.start_date,
+                    HabitLog.date <= challenge.end_date,
+                )
+            )
+            new_count = 1 if logs_result.scalar_one_or_none() else 0
+
+        elif challenge.type == ChallengeType.STREAK_RECOVERY:
+            if challenge.target_habit_id is None:
+                continue
+            habit = habit_by_id.get(challenge.target_habit_id)
+            if habit is None:
+                continue
+            streak = await _compute_streak(db, habit.id, habit.cooldown_days)
+            new_count = min(streak, challenge.target_count)
+
+        elif challenge.type == ChallengeType.WEEKLY:
+            if not active_habit_ids:
+                new_count = 0
+            else:
+                logs_result = await db.execute(
+                    select(HabitLog).where(
+                        HabitLog.habit_id.in_(active_habit_ids),
+                        HabitLog.completed == True,
+                        HabitLog.date >= challenge.start_date,
+                        HabitLog.date <= challenge.end_date,
+                    )
+                )
+                logs = logs_result.scalars().all()
+                by_day: dict[date, set[int]] = {}
+                for log in logs:
+                    by_day.setdefault(log.date, set()).add(log.habit_id)
+                new_count = sum(
+                    1 for completed_habits in by_day.values()
+                    if len(completed_habits) >= len(active_habit_ids)
+                )
+
+        elif challenge.type in {ChallengeType.IMPROVEMENT, ChallengeType.CATEGORY_FOCUS}:
+            category_match = re.search(r"'([^']+)'", challenge.title or "")
+            category = category_match.group(1).strip().lower() if category_match else None
+            candidate_habits = active_habits
+            if category:
+                candidate_habits = [h for h in active_habits if (h.category or '').lower() == category]
+            category_habit_ids = [h.id for h in candidate_habits]
+            if not category_habit_ids:
+                new_count = 0
+            else:
+                logs_result = await db.execute(
+                    select(HabitLog).where(
+                        HabitLog.habit_id.in_(category_habit_ids),
+                        HabitLog.completed == True,
+                        HabitLog.date >= challenge.start_date,
+                        HabitLog.date <= challenge.end_date,
+                    )
+                )
+                logs = logs_result.scalars().all()
+                new_count = len(logs)
+
+        new_count = max(0, min(new_count, challenge.target_count))
+        challenge.current_count = new_count
+
+        if new_count >= challenge.target_count:
+            challenge.status = ChallengeStatus.COMPLETED
+            if challenge.completed_at is None:
+                challenge.completed_at = datetime.now(timezone.utc)
 
 
 # --- Suggestions endpoint ---
@@ -273,6 +375,7 @@ async def log_habit(
         db.add(log)
         await db.commit()
         await db.refresh(log)
+        await _recalculate_active_challenges(db, current_user.id, log_data.date)
         await check_and_unlock(db, current_user.id)
         await db.commit()
         return log
@@ -295,6 +398,7 @@ async def log_habit(
         await db.commit()
         await db.refresh(existing)
 
+        await _recalculate_active_challenges(db, current_user.id, log_data.date)
         # Check achievements after log update
         await check_and_unlock(db, current_user.id)
         await db.commit()
@@ -309,6 +413,7 @@ async def log_habit(
     await db.commit()
     await db.refresh(log)
 
+    await _recalculate_active_challenges(db, current_user.id, log_data.date)
     # Check achievements after logging
     await check_and_unlock(db, current_user.id)
     await db.commit()

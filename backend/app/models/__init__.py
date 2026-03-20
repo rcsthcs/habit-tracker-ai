@@ -7,12 +7,13 @@ from app.models.user_activity import UserActivity
 from app.models.friendship import Friendship
 from app.models.achievement import Achievement
 from app.models.notification import Notification
+from app.models.device_token import DeviceToken
 from app.models.mood_log import MoodLog
 from app.models.challenge import Challenge, WeeklyReport
 
 __all__ = [
     "User", "Habit", "HabitLog", "ChatSession", "ChatMessage", "UserActivity",
     "Friendship", "Achievement", "Notification",
-    "MoodLog", "Challenge", "WeeklyReport",
+    "DeviceToken", "MoodLog", "Challenge", "WeeklyReport",
 ]
 

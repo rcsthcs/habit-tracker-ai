@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +8,7 @@ import '../core/app_colors.dart';
 import '../core/theme_extensions.dart';
 import '../models/mood.dart';
 import '../providers/app_providers.dart';
+import '../screens/chat_screen.dart';
 import '../widgets/glass_card.dart';
 
 class MoodScreen extends ConsumerStatefulWidget {
@@ -28,7 +30,7 @@ class _MoodScreenState extends ConsumerState<MoodScreen>
   static const _moods = [
     {'emoji': '😞', 'label': 'Плохо', 'color': Color(0xFFE57373)},
     {'emoji': '😕', 'label': 'Так себе', 'color': Color(0xFFFFB74D)},
-    {'emoji': '😐', 'label': 'Норм', 'color': Color(0xFFFFD54F)},
+    {'emoji': '😐', 'label': 'Нормально', 'color': Color(0xFFFFD54F)},
     {'emoji': '😊', 'label': 'Хорошо', 'color': Color(0xFF81C784)},
     {'emoji': '🤩', 'label': 'Отлично', 'color': Color(0xFF4FC3F7)},
   ];
@@ -91,6 +93,61 @@ class _MoodScreenState extends ConsumerState<MoodScreen>
     }
   }
 
+  Future<void> _openCoachChat({MoodAnalytics? analytics}) async {
+    final trend = analytics?.moodTrend ?? 'stable';
+    final insight = analytics?.aiInsight?.trim();
+
+    final initialMessage = trend == 'declining'
+        ? 'Помоги составить щадящий план на сегодня: короткие шаги, чтобы вернуть фокус и не сорваться с привычек.'
+        : 'Дай персональный план на сегодня по моим привычкам и настроению в формате 3 коротких шагов.';
+
+    final hints = <String, dynamic>{
+      'source': 'mood_screen',
+      'mood_score': _selectedMood,
+      'energy_level': _energyLevel,
+      'stress_level': _stressLevel,
+      'mood_trend': trend,
+      if (insight != null && insight.isNotEmpty) 'mood_ai_insight': insight,
+      if (_noteController.text.trim().isNotEmpty)
+        'today_note': _noteController.text.trim(),
+      'trigger': trend == 'declining' ? 'mood_decline' : 'mood_checkin',
+    };
+
+    try {
+      final api = ref.read(apiServiceProvider);
+      await api.getChatSessions();
+    } on DioException {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'AI-коуч временно недоступен. Проверь подключение к сети и попробуй ещё раз.',
+          ),
+        ),
+      );
+      return;
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content:
+              Text('Не удалось подключить AI-коуча. Повтори попытку позже.'),
+        ),
+      );
+      return;
+    }
+
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ChatScreen(
+          initialMessage: initialMessage,
+          initialContextHints: hints,
+        ),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _noteController.dispose();
@@ -103,7 +160,7 @@ class _MoodScreenState extends ConsumerState<MoodScreen>
     final bg = context.backgroundColor;
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
+      extendBodyBehindAppBar: false,
       appBar: AppBar(
         title: const Text('Настроение'),
         backgroundColor: Colors.transparent,
@@ -132,14 +189,12 @@ class _MoodScreenState extends ConsumerState<MoodScreen>
             ],
           ),
         ),
-        child: SafeArea(
-          child: TabBarView(
-            controller: _tabController,
-            children: [
-              _buildTodayTab(),
-              _buildHistoryTab(),
-            ],
-          ),
+        child: TabBarView(
+          controller: _tabController,
+          children: [
+            _buildTodayTab(),
+            _buildHistoryTab(),
+          ],
         ),
       ),
     );
@@ -193,89 +248,142 @@ class _MoodScreenState extends ConsumerState<MoodScreen>
   Widget _buildHistoryTab() {
     final moodsAsync = ref.watch(moodProvider);
 
-    return moodsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Ошибка: $e')),
-      data: (moods) {
-        if (moods.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text('😶', style: TextStyle(fontSize: 64)),
-                const SizedBox(height: 16),
-                Text(
-                  'Пока нет записей',
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: context.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Сохрани настроение во вкладке «Сегодня»',
-                  style: TextStyle(
-                    color: context.textSecondary,
-                    fontSize: 13,
-                  ),
-                ),
-              ],
+    return SafeArea(
+      top: false,
+      bottom: true,
+      child: moodsAsync.when(
+        loading: () => ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsets.fromLTRB(
+            16,
+            24,
+            16,
+            MediaQuery.of(context).padding.bottom + 88,
+          ),
+          children: const [
+            SizedBox(height: 120),
+            Center(child: CircularProgressIndicator()),
+          ],
+        ),
+        error: (e, _) => ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsets.fromLTRB(
+            16,
+            24,
+            16,
+            MediaQuery.of(context).padding.bottom + 88,
+          ),
+          children: [
+            const SizedBox(height: 120),
+            Text(
+              'Ошибка: $e',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: context.textSecondary),
             ),
-          );
-        }
+          ],
+        ),
+        data: (moods) {
+          if (moods.isEmpty) {
+            return LayoutBuilder(
+              builder: (context, constraints) => SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  24,
+                  16,
+                  MediaQuery.of(context).padding.bottom + 24,
+                ),
+                child: ConstrainedBox(
+                  constraints:
+                      BoxConstraints(minHeight: constraints.maxHeight - 24),
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('😶', style: TextStyle(fontSize: 64)),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Пока нет записей',
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: context.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Сохрани настроение во вкладке «Сегодня»',
+                          style: TextStyle(
+                            color: context.textSecondary,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }
 
-        // Sort by date descending
-        final sorted = List<MoodLog>.from(moods)
-          ..sort((a, b) => b.date.compareTo(a.date));
+          // Sort by date descending
+          final sorted = List<MoodLog>.from(moods)
+            ..sort((a, b) => b.date.compareTo(a.date));
 
-        // Weekly chart data (last 7 entries)
-        final last7 = sorted.take(7).toList().reversed.toList();
+          // Weekly chart data (last 7 entries)
+          final last7 = sorted.take(7).toList().reversed.toList();
 
-        return RefreshIndicator(
-          onRefresh: () => ref.read(moodProvider.notifier).loadMoods(),
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              // Weekly mini chart
-              if (last7.length >= 2) ...[
+          return RefreshIndicator(
+            onRefresh: () => ref.read(moodProvider.notifier).loadMoods(),
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: EdgeInsets.fromLTRB(
+                16,
+                16,
+                16,
+                MediaQuery.of(context).padding.bottom + 88,
+              ),
+              children: [
+                // Weekly mini chart
+                if (last7.length >= 2) ...[
+                  Text(
+                    'Последние дни',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildWeeklyChart(last7).animate().fadeIn(duration: 400.ms),
+                  const SizedBox(height: 24),
+                ],
+
                 Text(
-                  'Последние дни',
+                  'Все записи',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                 ),
                 const SizedBox(height: 12),
-                _buildWeeklyChart(last7).animate().fadeIn(duration: 400.ms),
-                const SizedBox(height: 24),
+
+                ...sorted.map((mood) => _buildMoodHistoryItem(mood)),
               ],
-
-              Text(
-                'Все записи',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-              const SizedBox(height: 12),
-
-              ...sorted.map((mood) => _buildMoodHistoryItem(mood)),
-            ],
-          ),
-        );
-      },
+            ),
+          );
+        },
+      ),
     );
   }
 
   Widget _buildWeeklyChart(List<MoodLog> entries) {
     return GlassCard(
       child: SizedBox(
-        height: 120,
+        height: 140,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: entries.map((entry) {
             final idx = (entry.score - 1).round().clamp(0, 4);
             final color = _moods[idx]['color'] as Color;
             final emoji = _moods[idx]['emoji'] as String;
-            final barHeight = (entry.score / 5.0) * 80;
+            final barHeight = (entry.score / 5.0) * 74;
             final day =
                 '${entry.date.day}.${entry.date.month.toString().padLeft(2, '0')}';
 
@@ -699,22 +807,36 @@ class _MoodScreenState extends ConsumerState<MoodScreen>
           const SizedBox(height: 16),
           GlassCard(
             padding: const EdgeInsets.all(14),
-            child: Row(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  Icons.auto_awesome_rounded,
-                  size: 18,
-                  color: AppColors.primary,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    data.aiInsight!.trim(),
-                    style: TextStyle(
-                      color: context.textPrimary,
-                      height: 1.35,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.auto_awesome_rounded,
+                      size: 18,
+                      color: AppColors.primary,
                     ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        data.aiInsight!.trim(),
+                        style: TextStyle(
+                          color: context.textPrimary,
+                          height: 1.35,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _openCoachChat(analytics: data),
+                    icon: const Icon(Icons.chat_bubble_outline_rounded),
+                    label: const Text('Обсудить с AI-коучем'),
                   ),
                 ),
               ],

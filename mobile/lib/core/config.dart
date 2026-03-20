@@ -1,5 +1,8 @@
 /// App configuration — change baseUrl for production deployment.
 class AppConfig {
+  // Google OAuth Web Client ID (required for backend Google token verification)
+  static const String googleServerClientId = '';
+
   // Production server
   static const String baseUrl = 'https://rcsthcs.click/api';
   static const String baseUrlWeb = 'https://rcsthcs.click/api';
@@ -16,7 +19,7 @@ class AppConfig {
 
   static const String appName = 'Habit Tracker AI';
   static const Duration requestTimeout = Duration(seconds: 30);
-  static const Duration chatTimeout = Duration(seconds: 60);
+  static const Duration chatTimeout = Duration(seconds: 120);
   static const int notificationPollIntervalSeconds = 60;
 
   /// Convert a potentially relative avatar URL to a full URL.

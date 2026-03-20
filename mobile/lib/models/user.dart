@@ -5,6 +5,7 @@ class User {
   final String? avatarUrl;
   final String timezone;
   final bool isActive;
+  final bool isEmailVerified;
   final bool isAdmin;
   final DateTime createdAt;
 
@@ -15,6 +16,7 @@ class User {
     this.avatarUrl,
     required this.timezone,
     required this.isActive,
+    this.isEmailVerified = false,
     this.isAdmin = false,
     required this.createdAt,
   });
@@ -27,6 +29,7 @@ class User {
       avatarUrl: json['avatar_url'],
       timezone: json['timezone'] ?? 'UTC',
       isActive: json['is_active'] ?? true,
+      isEmailVerified: json['is_email_verified'] ?? false,
       isAdmin: json['is_admin'] ?? false,
       createdAt: DateTime.parse(json['created_at']),
     );

@@ -32,7 +32,7 @@ async def init_db():
     async with engine.begin() as conn:
         from app.models import user, habit, habit_log, chat_session, chat_message, user_activity  # noqa
         from app.models import friendship, achievement, notification  # noqa
-        from app.models import mood_log, challenge  # noqa
+        from app.models import mood_log, challenge, device_token  # noqa
         await conn.run_sync(Base.metadata.create_all)
         await conn.run_sync(_run_dev_chat_migrations)
 
@@ -55,6 +55,39 @@ def _run_dev_chat_migrations(sync_conn):
                 )
                 """
             )
+        )
+
+    if "device_tokens" not in table_names:
+        sync_conn.execute(
+            text(
+                """
+                CREATE TABLE device_tokens (
+                    id INTEGER PRIMARY KEY,
+                    user_id INTEGER NOT NULL,
+                    token VARCHAR(512) NOT NULL,
+                    platform VARCHAR(32) NOT NULL DEFAULT 'unknown',
+                    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                    updated_at TIMESTAMP WITH TIME ZONE NOT NULL
+                )
+                """
+            )
+        )
+        sync_conn.execute(
+            text("CREATE UNIQUE INDEX IF NOT EXISTS uq_device_tokens_token ON device_tokens (token)")
+        )
+
+    user_columns = {column["name"] for column in inspector.get_columns("users")}
+    if "is_email_verified" not in user_columns:
+        sync_conn.execute(
+            text("ALTER TABLE users ADD COLUMN is_email_verified BOOLEAN DEFAULT FALSE")
+        )
+    if "email_verification_token" not in user_columns:
+        sync_conn.execute(
+            text("ALTER TABLE users ADD COLUMN email_verification_token VARCHAR(255)")
+        )
+    if "email_verification_expires_at" not in user_columns:
+        sync_conn.execute(
+            text("ALTER TABLE users ADD COLUMN email_verification_expires_at TIMESTAMP WITH TIME ZONE")
         )
 
     chat_message_columns = {

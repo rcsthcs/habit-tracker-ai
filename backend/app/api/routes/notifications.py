@@ -7,10 +7,39 @@ from sqlalchemy import select, func, update, delete
 from app.db.database import get_db
 from app.models.user import User
 from app.models.notification import Notification
+from app.models.device_token import DeviceToken
 from app.schemas.analytics import NotificationResponse
+from app.schemas.user import DeviceTokenRegisterRequest
 from app.api.auth_utils import get_current_user
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
+
+
+@router.post("/device-token")
+async def register_device_token(
+    data: DeviceTokenRegisterRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    token = data.token.strip()
+    if not token:
+        return {"message": "Token is empty"}
+
+    existing = await db.execute(select(DeviceToken).where(DeviceToken.token == token))
+    token_row = existing.scalar_one_or_none()
+    if token_row:
+        token_row.user_id = current_user.id
+        token_row.platform = data.platform or token_row.platform
+    else:
+        token_row = DeviceToken(
+            user_id=current_user.id,
+            token=token,
+            platform=data.platform or "unknown",
+        )
+        db.add(token_row)
+
+    await db.commit()
+    return {"message": "Device token registered"}
 
 
 @router.get("/", response_model=list[NotificationResponse])

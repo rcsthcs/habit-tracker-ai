@@ -10,6 +10,7 @@ from app.models.habit import Habit
 from app.models.habit_log import HabitLog
 from app.models.achievement import Achievement, AchievementType, ACHIEVEMENT_META
 from app.models.notification import Notification
+from app.notifications.push_service import send_push_to_user
 import logging
 
 logger = logging.getLogger(__name__)
@@ -44,6 +45,14 @@ async def _unlock(db: AsyncSession, user_id: int, achievement_type: str) -> Achi
         body=f"{meta.get('title', achievement_type)}: {meta.get('description', '')}",
     )
     db.add(notification)
+    await db.flush()
+    await send_push_to_user(
+        db=db,
+        user_id=user_id,
+        title=notification.title,
+        body=notification.body,
+        data={"type": notification.type, "notification_id": str(notification.id)},
+    )
 
     logger.info(f"🏅 User {user_id} unlocked achievement: {achievement_type}")
     return achievement

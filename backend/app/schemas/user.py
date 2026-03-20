@@ -56,6 +56,7 @@ class UserResponse(BaseModel):
     avatar_url: str | None = None
     timezone: str
     is_active: bool
+    is_email_verified: bool
     is_admin: bool = False
     created_at: datetime
 
@@ -87,4 +88,13 @@ class ChangePasswordRequest(BaseModel):
         if not re.search(r"\d", v):
             raise ValueError("Пароль должен содержать хотя бы одну цифру")
         return v
+
+
+class ResendVerificationRequest(BaseModel):
+    email: EmailStr
+
+
+class DeviceTokenRegisterRequest(BaseModel):
+    token: str
+    platform: str = "unknown"
 

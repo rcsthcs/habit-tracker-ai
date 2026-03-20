@@ -4,17 +4,27 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.db.database import get_db
 from app.models.user import User
-from app.schemas.user import UserCreate, UserResponse, Token, GoogleAuthRequest, UserUpdate, ChangePasswordRequest
+from app.schemas.user import UserCreate, UserResponse, Token, GoogleAuthRequest, UserUpdate, ChangePasswordRequest, ResendVerificationRequest
 from app.api.auth_utils import get_password_hash, verify_password, create_access_token, get_current_user
 from app.config import get_settings
+from app.services.email_service import send_verification_email
 import logging
 import os
 import uuid
+import secrets
+from datetime import datetime, timezone, timedelta
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 AVATAR_DIR = "/app/data/avatars"
+
+
+def _generate_email_verification_data() -> tuple[str, datetime]:
+    settings = get_settings()
+    token = secrets.token_urlsafe(32)
+    expires_at = datetime.now(timezone.utc) + timedelta(hours=settings.EMAIL_VERIFY_TOKEN_TTL_HOURS)
+    return token, expires_at
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
@@ -29,14 +39,19 @@ async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
             detail="Username or email already registered",
         )
 
+    verification_token, verification_expires = _generate_email_verification_data()
     user = User(
         username=user_data.username,
         email=user_data.email,
         password_hash=get_password_hash(user_data.password),
+        is_email_verified=False,
+        email_verification_token=verification_token,
+        email_verification_expires_at=verification_expires,
     )
     db.add(user)
     await db.commit()
     await db.refresh(user)
+    await send_verification_email(user.email, user.username, verification_token)
     return user
 
 
@@ -50,6 +65,12 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSessi
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    if not user.is_email_verified and not user.google_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Email not verified. Please confirm your email first.",
         )
 
     access_token = create_access_token(data={"sub": user.id})
@@ -93,6 +114,9 @@ async def google_auth(data: GoogleAuthRequest, db: AsyncSession = Depends(get_db
         user = result.scalar_one_or_none()
         if user:
             user.google_id = google_id
+            user.is_email_verified = True
+            user.email_verification_token = None
+            user.email_verification_expires_at = None
             if picture:
                 user.avatar_url = picture
             await db.commit()
@@ -114,6 +138,7 @@ async def google_auth(data: GoogleAuthRequest, db: AsyncSession = Depends(get_db
                 email=email,
                 google_id=google_id,
                 avatar_url=picture,
+                is_email_verified=True,
                 password_hash=None,
             )
             db.add(user)
@@ -156,9 +181,57 @@ async def update_profile(
     for field, value in update_data.items():
         setattr(current_user, field, value)
 
+    if "email" in update_data:
+        verification_token, verification_expires = _generate_email_verification_data()
+        current_user.is_email_verified = False
+        current_user.email_verification_token = verification_token
+        current_user.email_verification_expires_at = verification_expires
+        await send_verification_email(current_user.email, current_user.username, verification_token)
+
     await db.commit()
     await db.refresh(current_user)
     return current_user
+
+
+@router.get("/verify-email")
+async def verify_email(
+    token: str,
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(User).where(User.email_verification_token == token))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid verification token")
+
+    if user.email_verification_expires_at and user.email_verification_expires_at < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="Verification token expired")
+
+    user.is_email_verified = True
+    user.email_verification_token = None
+    user.email_verification_expires_at = None
+    await db.commit()
+    return {"message": "Email verified successfully"}
+
+
+@router.post("/resend-verification")
+async def resend_verification_email(
+    data: ResendVerificationRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(User).where(User.email == data.email))
+    user = result.scalar_one_or_none()
+    if not user:
+        return {"message": "If the account exists, a verification email has been sent"}
+
+    if user.is_email_verified:
+        return {"message": "Email already verified"}
+
+    verification_token, verification_expires = _generate_email_verification_data()
+    user.email_verification_token = verification_token
+    user.email_verification_expires_at = verification_expires
+    await db.commit()
+    await send_verification_email(user.email, user.username, verification_token)
+    return {"message": "Verification email sent"}
 
 
 @router.post("/me/avatar", response_model=UserResponse)

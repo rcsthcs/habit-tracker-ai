@@ -107,6 +107,56 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     setState(() => _loading = false);
   }
 
+  bool _isEmailVerificationMessage(String? message) {
+    if (message == null) return false;
+    final lower = message.toLowerCase();
+    return lower.contains('подтверд') ||
+        lower.contains('почт') ||
+        lower.contains('email not verified');
+  }
+
+  Future<void> _showResendVerificationDialog() async {
+    final controller = TextEditingController(text: _emailController.text.trim());
+    final formKey = GlobalKey<FormState>();
+
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Повторная отправка письма'),
+        content: Form(
+          key: formKey,
+          child: TextFormField(
+            controller: controller,
+            keyboardType: TextInputType.emailAddress,
+            decoration: const InputDecoration(
+              labelText: 'Email',
+              hintText: 'example@mail.com',
+            ),
+            validator: _validateEmail,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Отмена'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              if (!formKey.currentState!.validate()) return;
+              Navigator.of(context).pop();
+              await ref
+                  .read(authProvider.notifier)
+                  .resendVerificationEmail(controller.text.trim());
+            },
+            child: const Text('Отправить'),
+          ),
+        ],
+      ),
+    );
+
+    controller.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
@@ -216,6 +266,15 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                                     ],
                                   ),
                                 ).animate().shakeX(hz: 3, amount: 4),
+
+                              if (_isEmailVerificationMessage(authState.error))
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: TextButton(
+                                    onPressed: _showResendVerificationDialog,
+                                    child: const Text('Отправить письмо ещё раз'),
+                                  ),
+                                ),
 
                               // Username
                               TextFormField(

@@ -12,6 +12,7 @@ from app.models.habit import Habit
 from app.models.habit_log import HabitLog
 from app.models.friendship import Friendship, FriendshipStatus
 from app.models.notification import Notification
+from app.notifications.push_service import send_push_to_user
 from app.schemas.friends import FriendProgressResponse
 from app.api.auth_utils import get_current_user
 from app.api.routes.habits import _compute_streak, _completion_rate
@@ -123,6 +124,14 @@ async def send_friend_request(
         body=f"{current_user.username} хочет добавить тебя в друзья",
     )
     db.add(notification)
+    await db.flush()
+    await send_push_to_user(
+        db=db,
+        user_id=friend_id,
+        title=notification.title,
+        body=notification.body,
+        data={"type": notification.type, "notification_id": str(notification.id)},
+    )
 
     await db.commit()
     return {"message": f"Friend request sent to {friend.username}"}
@@ -179,6 +188,14 @@ async def accept_friend_request(
         body=f"{current_user.username} принял(а) твой запрос дружбы",
     )
     db.add(notification)
+    await db.flush()
+    await send_push_to_user(
+        db=db,
+        user_id=friendship.user_id,
+        title=notification.title,
+        body=notification.body,
+        data={"type": notification.type, "notification_id": str(notification.id)},
+    )
 
     await db.commit()
     return {"message": "Friend request accepted"}
