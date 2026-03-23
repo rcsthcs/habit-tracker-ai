@@ -1,7 +1,7 @@
 /// App configuration — change baseUrl for production deployment.
 class AppConfig {
   // Google OAuth Web Client ID (required for backend Google token verification)
-  static const String googleServerClientId = '';
+  static const String googleServerClientId = 'your-google-web-client-id.apps.googleusercontent.com';
 
   // Production server
   static const String baseUrl = 'https://rcsthcs.click/api';

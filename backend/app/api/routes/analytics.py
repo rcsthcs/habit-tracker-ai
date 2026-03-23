@@ -133,11 +133,11 @@ async def get_analytics(
 
 @router.get("/detailed", response_model=DetailedAnalyticsResponse)
 async def get_detailed_analytics(
-    days: int = 90,
+    days: int = 30,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Extended analytics: heatmap, categories, hourly distribution, 90-day trends."""
+    """Extended analytics: heatmap, categories, hourly distribution, 30-day trends."""
     today = date.today()
     since = today - timedelta(days=days)
 

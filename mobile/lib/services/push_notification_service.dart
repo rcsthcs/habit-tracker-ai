@@ -31,7 +31,7 @@ class PushNotificationService {
       await messaging.requestPermission(alert: true, badge: true, sound: true);
 
       if (!_isInitialized) {
-        FirebaseMessaging.onTokenRefresh.listen((token) async {
+        messaging.onTokenRefresh.listen((token) async {
           if (token.isEmpty) return;
           try {
             await api.registerDeviceToken(token, platform: _platform);

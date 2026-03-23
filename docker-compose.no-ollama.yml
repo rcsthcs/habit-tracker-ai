@@ -31,6 +31,8 @@ services:
       - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.0-flash}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
       - OPENROUTER_MODEL=${OPENROUTER_MODEL:-stepfun/step-3.5-flash:free}
+    env_file:
+      - .env
     volumes:
       - backend-data:/app/data
     depends_on:

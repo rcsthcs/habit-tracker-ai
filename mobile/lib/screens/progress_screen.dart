@@ -512,8 +512,8 @@ class ProgressScreen extends ConsumerWidget {
     final heatmap = detailed.heatmap;
     final dailyBreakdown = detailed.dailyBreakdown;
     final now = DateTime.now();
-    final days = List.generate(90, (i) {
-      final date = now.subtract(Duration(days: 89 - i));
+    final days = List.generate(30, (i) {
+      final date = now.subtract(Duration(days: 29 - i));
       return DateTime(date.year, date.month, date.day);
     });
 
